@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import alex.uni.flight_reservation_system.AuthenticationService.dto.TokenRefreshResponse;
 import alex.uni.flight_reservation_system.AuthenticationService.entity.RefreshToken;
 import alex.uni.flight_reservation_system.AuthenticationService.entity.User;
+import alex.uni.flight_reservation_system.AuthenticationService.jwt.JwtService;
 import alex.uni.flight_reservation_system.AuthenticationService.repository.RefreshTokenRepository;
 import alex.uni.flight_reservation_system.AuthenticationService.repository.UserRepository;
 
@@ -25,6 +27,12 @@ public class RefreshTokenService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private UserDetailsServiceImpl userDetailsService;
+
     public RefreshToken createRefreshToken(User user) {
         deleteByUserId(user.getUserId()); // delete just in case there are multiple refresh tokens for the same user
         RefreshToken refreshToken = new RefreshToken();
@@ -39,6 +47,28 @@ public class RefreshTokenService {
 
     public Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);
+    }
+
+    public TokenRefreshResponse refreshAccessToken(String refreshToken) {
+        if (!this.validateRefreshToken(refreshToken)) {
+            throw new RuntimeException("Invalid or expired refresh token");
+        }
+        Integer userId = refreshTokenRepository.getUserIdByRefreshToken(refreshToken);
+        if (userId == null) {
+            throw new RuntimeException("Refresh token not found");
+        }
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        String newAccessToken = jwtService.generateToken(userDetailsService.loadUserByUsername(user.getUsername()));
+        return new TokenRefreshResponse(newAccessToken, refreshToken);
+    }
+
+    public boolean validateRefreshToken(String token) {
+        Optional<RefreshToken> refreshTokenOpt = refreshTokenRepository.findByToken(token);
+        if (refreshTokenOpt.isEmpty()) {
+            return false;
+        }
+        RefreshToken refreshToken = refreshTokenOpt.get();
+        return refreshToken.getExpiryDate().isAfter(Instant.now());
     }
 
     public RefreshToken verifyExpiration(RefreshToken token) {

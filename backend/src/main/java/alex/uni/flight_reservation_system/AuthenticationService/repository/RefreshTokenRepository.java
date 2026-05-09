@@ -19,4 +19,9 @@ public class RefreshTokenRepository {
     public int deleteByUser(User user) {
         throw new UnsupportedOperationException("Unimplemented method 'deleteByUser'");
     }
+
+    public Integer getUserIdByRefreshToken(String refreshToken) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getUserIdByRefreshToken'");
+    }
 }

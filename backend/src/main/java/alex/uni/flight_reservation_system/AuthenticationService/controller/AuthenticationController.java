@@ -53,17 +53,12 @@ public class AuthenticationController {
     @Transactional
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshRequest request) {
-        String requestRefreshToken = request.getRefreshToken();
-
-        return refreshTokenService.findByToken(requestRefreshToken)
-            .map(refreshTokenService::verifyExpiration)
-            .map(RefreshToken::getUser)
-            .map(user -> {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-                String token = jwtService.generateToken(userDetails);
-                return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
-            })
-            .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
+        try {
+            TokenRefreshResponse response = refreshTokenService.refreshAccessToken(request.getRefreshToken());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @Transactional
