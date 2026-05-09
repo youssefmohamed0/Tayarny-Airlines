@@ -14,9 +14,7 @@ import alex.uni.flight_reservation_system.AuthenticationService.service.RefreshT
 import alex.uni.flight_reservation_system.AuthenticationService.service.UserDetailsServiceImpl;
 import alex.uni.flight_reservation_system.AuthenticationService.dto.TokenRefreshRequest;
 import alex.uni.flight_reservation_system.AuthenticationService.dto.TokenRefreshResponse;
-import alex.uni.flight_reservation_system.AuthenticationService.entity.RefreshToken;
 import alex.uni.flight_reservation_system.AuthenticationService.jwt.JwtService;
-import org.springframework.security.core.userdetails.UserDetails;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 

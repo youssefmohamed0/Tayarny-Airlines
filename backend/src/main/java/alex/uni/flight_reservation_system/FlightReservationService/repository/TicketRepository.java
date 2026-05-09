@@ -1,8 +1,9 @@
-package alex.uni.flight_reservation_system.repository;
+package alex.uni.flight_reservation_system.FlightReservationService.repository;
 
-import com.yourdomain.flightbooking.entity.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import alex.uni.flight_reservation_system.FlightReservationService.entity.Ticket;
 
 import java.util.List;
 import java.util.UUID;

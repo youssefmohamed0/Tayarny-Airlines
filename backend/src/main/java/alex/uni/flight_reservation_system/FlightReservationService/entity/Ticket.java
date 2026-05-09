@@ -1,8 +1,10 @@
-package alex.uni.flight_reservation_system.entity;
+package alex.uni.flight_reservation_system.FlightReservationService.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.UUID;
+
+import alex.uni.flight_reservation_system.FlightReservationService.enums.PassengerType;
 
 @Entity
 @Table(name = "tickets")

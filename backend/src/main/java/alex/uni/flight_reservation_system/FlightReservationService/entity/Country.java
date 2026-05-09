@@ -1,4 +1,4 @@
-package alex.uni.flight_reservation_system.entity;
+package alex.uni.flight_reservation_system.FlightReservationService.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;

@@ -53,7 +53,7 @@ public class RefreshTokenService {
         if (!this.validateRefreshToken(refreshToken)) {
             throw new RuntimeException("Invalid or expired refresh token");
         }
-        Integer userId = refreshTokenRepository.getUserIdByRefreshToken(refreshToken);
+        UUID userId = refreshTokenRepository.findUserByToken(refreshToken).get().getUserId();
         if (userId == null) {
             throw new RuntimeException("Refresh token not found");
         }
@@ -79,7 +79,7 @@ public class RefreshTokenService {
         return token;
     }
 
-    public int deleteByUserId(Integer userId) {
+    public int deleteByUserId(UUID userId) {
         return refreshTokenRepository.deleteByUser(userRepository.findById(userId).get());
     }
 }

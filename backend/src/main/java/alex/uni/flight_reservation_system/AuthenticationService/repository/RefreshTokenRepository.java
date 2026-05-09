@@ -1,27 +1,26 @@
 package alex.uni.flight_reservation_system.AuthenticationService.repository;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
 import alex.uni.flight_reservation_system.AuthenticationService.entity.RefreshToken;
-import java.util.Optional;
 import alex.uni.flight_reservation_system.AuthenticationService.entity.User;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @Repository
-public class RefreshTokenRepository {
+public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
 
-    public Optional<RefreshToken> findByToken(String token) {
-        throw new UnsupportedOperationException("Unimplemented method 'findByToken'");
-    }
 
-    public RefreshToken save(RefreshToken refreshToken) {
-        throw new UnsupportedOperationException("Unimplemented method 'save'");
-    }
+    Optional<RefreshToken> findByToken(String token);
 
-    public int deleteByUser(User user) {
-        throw new UnsupportedOperationException("Unimplemented method 'deleteByUser'");
-    }
+    @Transactional
+    @Modifying
+    int deleteByUser(User user);
 
-    public Integer getUserIdByRefreshToken(String refreshToken) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getUserIdByRefreshToken'");
-    }
+    Optional<User> findUserByToken(String token);
+
 }

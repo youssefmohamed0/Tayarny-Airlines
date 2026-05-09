@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
 import alex.uni.flight_reservation_system.AuthenticationService.enums.Role;
 
 @Data
@@ -13,7 +16,7 @@ import alex.uni.flight_reservation_system.AuthenticationService.enums.Role;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserResponse {
-    private Integer id;
+    private UUID id;
     private String username;
     @Enumerated(EnumType.STRING)
     private Role role;
