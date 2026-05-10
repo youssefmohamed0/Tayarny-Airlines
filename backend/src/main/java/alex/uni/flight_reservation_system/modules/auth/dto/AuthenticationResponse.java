@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthenticationResponse {
-    private UUID id;
-    String token;
+    // private UUID id;
+    String accessToken;
     String refreshToken;
     String username;
     String role;

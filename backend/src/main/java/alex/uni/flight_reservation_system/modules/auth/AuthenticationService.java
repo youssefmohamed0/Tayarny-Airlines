@@ -38,6 +38,8 @@ public class AuthenticationService {
         User newUser = User.builder()
                 .username(signupRequest.getUsername())
                 .password(passwordEncoder.encode(signupRequest.getPassword()))
+                .fullName(signupRequest.getFullName())
+                .email(signupRequest.getEmail())
                 .role(Role.valueOf(signupRequest.getRole()))
                 .build();
         userRepository.save(newUser);
@@ -53,11 +55,11 @@ public class AuthenticationService {
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser);
 
         return AuthenticationResponse.builder()
-                .id(savedUser.getId())
-                .token(jwt)
+                // .id(savedUser.getId())
+                .accessToken(jwt)
                 .refreshToken(refreshToken.getToken())
                 .username(newUserDetails.getUsername())
-                .role(newUserDetails.getAuthorities().iterator().next().getAuthority())
+                .role(newUserDetails.getAuthorities().iterator().next().getAuthority().substring(5))
                 .build();
     }
 
@@ -79,11 +81,11 @@ public class AuthenticationService {
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(loadedUser);
 
         return AuthenticationResponse.builder()
-                .id(loadedUser.getId())
-                .token(jwt)
+                // .id(loadedUser.getId())
+                .accessToken(jwt)
                 .refreshToken(refreshToken.getToken())
                 .username(userDetails.getUsername())
-                .role(userDetails.getAuthorities().iterator().next().getAuthority())
+                .role(userDetails.getAuthorities().iterator().next().getAuthority().substring(5))
                 .build();
     }
 
