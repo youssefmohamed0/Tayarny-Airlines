@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16.13
+    container_name: flight_booking_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: flight_booking_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build: .
+    container_name: flight_booking_backend
+    ports:
+      - "8080:8080"
+    environment:
+      # These variables override your application.properties for the Docker environment
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/flight_booking_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: your_password
+      
+      # Optional: Helpful to see Flyway and Hibernate logs during development
+      SPRING_JPA_SHOW_SQL: "true"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

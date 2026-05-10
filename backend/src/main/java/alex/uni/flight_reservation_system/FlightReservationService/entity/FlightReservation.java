@@ -27,6 +27,10 @@ public class FlightReservation {
     @JoinColumn(name = "flight_id", nullable = false)
     private Flight flight;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fare_option_id", nullable = false)
+    private FareOption fareOption;
+
     @Column(name = "num_seats", nullable = false)
     private Integer numSeats;
 

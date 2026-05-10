@@ -22,22 +22,26 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/auth")
 public class AuthenticationController {
 
-    @Autowired AuthenticationService authenticationService;
-    @Autowired RefreshTokenService refreshTokenService;
-    @Autowired JwtService jwtService;
-    @Autowired UserDetailsServiceImpl userDetailsService;
+    @Autowired
+    AuthenticationService authenticationService;
+    @Autowired
+    RefreshTokenService refreshTokenService;
+    @Autowired
+    JwtService jwtService;
+    @Autowired
+    UserDetailsServiceImpl userDetailsService;
 
     @Transactional
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest signupRequest) {
         try {
             return ResponseEntity.ok(authenticationService.signup(signupRequest));
-            
+
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
     @Transactional
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -47,7 +51,7 @@ public class AuthenticationController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
     @Transactional
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshRequest request) {
@@ -62,8 +66,11 @@ public class AuthenticationController {
     @Transactional
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser(@Valid @RequestBody TokenRefreshRequest request) {
-        refreshTokenService.findByToken(request.getRefreshToken())
-            .ifPresent(token -> refreshTokenService.deleteByUserId(token.getUser().getUserId()));
-        return ResponseEntity.ok("Log out successful!");
+        try {
+            refreshTokenService.logUserOut(request);
+            return ResponseEntity.ok("Log out successful!");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

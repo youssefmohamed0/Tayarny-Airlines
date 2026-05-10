@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.List;
 
 @Entity
 @Table(name = "flights")
@@ -30,15 +29,15 @@ public class Flight {
     @JoinColumn(name = "airplane_id", nullable = false)
     private Airplane airplane;
 
-    @Column(name = "available_seats")
-    private Integer availableSeats;
-
     @Column(name = "departure_time", nullable = false)
     private LocalDateTime departureTime;
 
     @Column(name = "arrival_time", nullable = false)
     private LocalDateTime arrivalTime;
 
-    @OneToMany(mappedBy = "flight")
-    private List<FlightReservation> reservations;
+    @Column(name = "terminal", nullable = false)
+    private String terminal;
+
+    @Column(name = "status", nullable = false)
+    private String status;
 }
