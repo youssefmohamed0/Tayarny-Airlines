@@ -23,7 +23,7 @@ public class JwtService {
 
     @Value("${app.jwt.secret}")
     private String jwtSecret;
-    @Value("${app.jwt.token-expiration-ms}")
+    @Value("${app.jwt.access-token-expiration-ms}")
     private Long tokenExpirationMs;
 
     public String generateToken(UserDetails userDetails) {

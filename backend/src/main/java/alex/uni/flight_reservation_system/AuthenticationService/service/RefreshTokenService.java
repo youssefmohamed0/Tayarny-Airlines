@@ -20,7 +20,7 @@ import jakarta.transaction.Transactional;
 @Service
 public class RefreshTokenService {
 
-    @Value("${app.jwt.jwtRefreshExpirationMs}")
+    @Value("${app.jwt.refresh-token-expiration-ms}")
     private Long refreshTokenDurationMs;
 
     @Autowired
