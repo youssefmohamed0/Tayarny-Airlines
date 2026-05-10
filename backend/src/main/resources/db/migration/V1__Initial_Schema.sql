@@ -54,7 +54,7 @@ CREATE TABLE flights (
     departure_time TIMESTAMP NOT NULL,
     arrival_time TIMESTAMP NOT NULL,
     status VARCHAR(50) NOT NULL,
-    terminal VARCHAR(10) NOT NULL -- why terminal not an int???
+    terminal VARCHAR(10) NOT NULL 
 );
 
 -- Note: Unique constraint ensures no duplicate seats on a single plane model
@@ -104,7 +104,7 @@ CREATE TABLE tickets (
 CREATE TABLE refresh_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token VARCHAR(255) NOT NULL UNIQUE, -- why would it be a hash?
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
     expires_at TIMESTAMP NOT NULL,
     revoked BOOLEAN NOT NULL DEFAULT FALSE
 );

@@ -3,6 +3,9 @@ package alex.uni.flight_reservation_system.FlightReservationService.entity;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -41,6 +44,7 @@ public class FareOption {
     @Column(name = "available_seats", nullable = false)
     private Integer availableSeats;
 
+    @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "benefits", columnDefinition = "text[]")
     private List<String> benefits;
 }

@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.List;
 
 @Entity
 @Table(name = "flights")
@@ -29,9 +28,6 @@ public class Flight {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "airplane_id", nullable = false)
     private Airplane airplane;
-
-    @Column(name = "available_seats")
-    private Integer availableSeats;
 
     @Column(name = "departure_time", nullable = false)
     private LocalDateTime departureTime;
