@@ -20,10 +20,10 @@ public interface FlightRepository extends JpaRepository<Flight, UUID> {
 
     // Alternatively, for complex queries, you can write your own exact SQL (JPQL)
     // This is great for your search API to ensure the flight has enough available seats!
-    @Query("SELECT f FROM Flight f WHERE f.originAirport.id = :originId " +
+    @Query("SELECT DISTINCT f FROM Flight f JOIN FareOption fo ON fo.flight = f WHERE f.originAirport.id = :originId " +
            "AND f.destinationAirport.id = :destId " +
            "AND f.departureTime BETWEEN :startOfDay AND :endOfDay " +
-           "AND f.availableSeats >= :travelersCount")
+           "AND fo.availableSeats >= :travelersCount")
     List<Flight> searchAvailableFlights(
             @Param("originId") UUID originId,
             @Param("destId") UUID destinationId,
