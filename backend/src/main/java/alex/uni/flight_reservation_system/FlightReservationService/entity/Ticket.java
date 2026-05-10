@@ -3,6 +3,7 @@ package alex.uni.flight_reservation_system.FlightReservationService.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.UUID;
+import java.time.LocalDate;
 
 import alex.uni.flight_reservation_system.FlightReservationService.enums.PassengerType;
 
@@ -19,9 +20,13 @@ public class Ticket {
     @JoinColumn(name = "reservation_id", nullable = false)
     private FlightReservation reservation;
 
-    // Linking directly to the seat number as requested in your ERD
-    @Column(name = "seat_num", nullable = false)
-    private String seatNum;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seat_id", nullable = false)
+    private Seat seat;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fare_option_id")
+    private FareOption fareOption;
 
     @Column(nullable = false)
     private Double price;
@@ -35,4 +40,7 @@ public class Ticket {
 
     @Column(name = "passenger_name", nullable = false)
     private String passengerName;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
 }

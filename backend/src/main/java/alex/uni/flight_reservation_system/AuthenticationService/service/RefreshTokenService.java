@@ -8,12 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import alex.uni.flight_reservation_system.AuthenticationService.dto.TokenRefreshRequest;
 import alex.uni.flight_reservation_system.AuthenticationService.dto.TokenRefreshResponse;
 import alex.uni.flight_reservation_system.AuthenticationService.entity.RefreshToken;
 import alex.uni.flight_reservation_system.AuthenticationService.entity.User;
 import alex.uni.flight_reservation_system.AuthenticationService.jwt.JwtService;
 import alex.uni.flight_reservation_system.AuthenticationService.repository.RefreshTokenRepository;
 import alex.uni.flight_reservation_system.AuthenticationService.repository.UserRepository;
+import jakarta.transaction.Transactional;
 
 @Service
 public class RefreshTokenService {
@@ -34,7 +36,7 @@ public class RefreshTokenService {
     private UserDetailsServiceImpl userDetailsService;
 
     public RefreshToken createRefreshToken(User user) {
-        deleteByUserId(user.getUserId()); // delete just in case there are multiple refresh tokens for the same user
+        deleteByUserId(user.getId()); // delete just in case there are multiple refresh tokens for the same user
         RefreshToken refreshToken = new RefreshToken();
 
         refreshToken.setUser(user);
@@ -53,7 +55,7 @@ public class RefreshTokenService {
         if (!this.validateRefreshToken(refreshToken)) {
             throw new RuntimeException("Invalid or expired refresh token");
         }
-        UUID userId = refreshTokenRepository.findUserByToken(refreshToken).get().getUserId();
+        UUID userId = refreshTokenRepository.findUserByToken(refreshToken).get().getId();
         if (userId == null) {
             throw new RuntimeException("Refresh token not found");
         }
@@ -81,5 +83,14 @@ public class RefreshTokenService {
 
     public int deleteByUserId(UUID userId) {
         return refreshTokenRepository.deleteByUser(userRepository.findById(userId).get());
+    }
+
+    @Transactional
+    public void logUserOut(TokenRefreshRequest request) {
+        Optional<RefreshToken> refreshTokenOpt = refreshTokenRepository.findByToken(request.getRefreshToken());
+        if (refreshTokenOpt.isEmpty()) {
+            throw new RuntimeException("Refresh token not found");
+        }
+        refreshTokenRepository.deleteByUser(refreshTokenOpt.get().getUser());
     }
 }

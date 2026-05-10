@@ -43,15 +43,18 @@ public class AuthenticationService {
                 .build();
         userRepository.save(newUser);
 
-        // UserDetails newUserDetails = userDetailsService.loadUserByUsername(newUser.getUsername()); // this is an extra DB hit
-        UserDetails newUserDetails = userDetailsService.UsertToUserDetail(newUser); // this saves us from an extra DB hit
+        // UserDetails newUserDetails =
+        // userDetailsService.loadUserByUsername(newUser.getUsername()); // this is an
+        // extra DB hit
+        UserDetails newUserDetails = userDetailsService.UsertToUserDetail(newUser); // this saves us from an extra DB
+                                                                                    // hit
         String jwt = jwtService.generateToken(newUserDetails);
 
         User savedUser = userRepository.findByUsername(newUserDetails.getUsername()).orElse(null);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser);
 
         return AuthenticationResponse.builder()
-                .id(savedUser.getUserId())
+                .id(savedUser.getId())
                 .token(jwt)
                 .refreshToken(refreshToken.getToken())
                 .username(newUserDetails.getUsername())
@@ -64,16 +67,20 @@ public class AuthenticationService {
                 loginRequest.getUsername(),
                 loginRequest.getPassword()));
 
-        // UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getUsername()); // this is an extra DB hit
+        // UserDetails userDetails =
+        // userDetailsService.loadUserByUsername(loginRequest.getUsername()); // this is
+        // an extra DB hit
         User loadedUser = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
-        UserDetails userDetails = userDetailsService.UsertToUserDetail(loadedUser); // this saves us from an extra DB hit
+        UserDetails userDetails = userDetailsService.UsertToUserDetail(loadedUser); // this saves us from an extra DB
+                                                                                    // hit
         String jwt = jwtService.generateToken(userDetails);
 
-        // User loadedUser = userRepository.findByUsername(userDetails.getUsername()).orElse(null);
+        // User loadedUser =
+        // userRepository.findByUsername(userDetails.getUsername()).orElse(null);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(loadedUser);
 
         return AuthenticationResponse.builder()
-                .id(loadedUser.getUserId())
+                .id(loadedUser.getId())
                 .token(jwt)
                 .refreshToken(refreshToken.getToken())
                 .username(userDetails.getUsername())
