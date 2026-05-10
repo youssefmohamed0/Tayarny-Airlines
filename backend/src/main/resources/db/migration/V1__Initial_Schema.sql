@@ -51,9 +51,10 @@ CREATE TABLE flights (
     origin_airport_id UUID NOT NULL REFERENCES airports(id),
     destination_airport_id UUID NOT NULL REFERENCES airports(id),
     airplane_id UUID NOT NULL REFERENCES airplanes(id),
-    available_seats INT NOT NULL,
     departure_time TIMESTAMP NOT NULL,
-    arrival_time TIMESTAMP NOT NULL
+    arrival_time TIMESTAMP NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    terminal VARCHAR(10) NOT NULL
 );
 
 -- Note: Unique constraint ensures no duplicate seats on a single plane model
@@ -66,11 +67,23 @@ CREATE TABLE seats (
     UNIQUE (model_id, seat_num)
 );
 
+CREATE TABLE fare_options (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    flight_id UUID NOT NULL REFERENCES flights(id),
+    fare_name VARCHAR(100) NOT NULL,       -- 'Economy Semi-Flex'
+    cabin_class VARCHAR(50) NOT NULL,      -- 'ECONOMY'
+    price_per_adult DECIMAL(10,2) NOT NULL,
+    price_per_child DECIMAL(10,2) NOT NULL,
+    available_seats INT NOT NULL,
+    benefits TEXT[]                        -- or a separate benefits table
+);
+
 -- 4. Create transaction tables
 CREATE TABLE flight_reservations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id),
     flight_id UUID NOT NULL REFERENCES flights(id),
+    fare_option_id UUID NOT NULL REFERENCES fare_options(id),
     num_seats INT NOT NULL,
     total_price DECIMAL(10, 2) NOT NULL, -- ADDED: Total price of the reservation
     status VARCHAR(50) NOT NULL
@@ -79,9 +92,26 @@ CREATE TABLE flight_reservations (
 CREATE TABLE tickets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     reservation_id UUID NOT NULL REFERENCES flight_reservations(id) ON DELETE CASCADE,
-    seat_num VARCHAR(10) NOT NULL,
-    price DECIMAL(10, 2) NOT NULL,
-    passenger_type VARCHAR(50) NOT NULL,
+    seat_id UUID NOT NULL REFERENCES seats(id),
+    fare_option_id UUID REFERENCES fare_options(id),
+    passenger_type VARCHAR(50) NOT NULL, -- ADULT, CHILD
+    price DECIMAL(10,2) NOT NULL,
     passport_number VARCHAR(100),
-    passenger_name VARCHAR(255) NOT NULL
+    passenger_name VARCHAR(255) NOT NULL,
+    date_of_birth DATE
+);
+
+CREATE TABLE refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    revoked BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE flight_seat_status (
+    flight_id UUID NOT NULL REFERENCES flights(id),
+    seat_id   UUID NOT NULL REFERENCES seats(id),
+    status    VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE', -- AVAILABLE, OCCUPIED, LOCKED
+    PRIMARY KEY (flight_id, seat_id)
 );
