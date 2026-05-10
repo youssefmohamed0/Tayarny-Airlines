@@ -23,16 +23,24 @@ services:
     ports:
       - "9090:9090"
     environment:
-      # These variables override your application.properties for the Docker environment
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/flight_booking_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: your_password
-      
-      # Optional: Helpful to see Flyway and Hibernate logs during development
       SPRING_JPA_SHOW_SQL: "true"
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: flight_booking_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+    depends_on:
+      - backend
     restart: unless-stopped
 
 volumes:
