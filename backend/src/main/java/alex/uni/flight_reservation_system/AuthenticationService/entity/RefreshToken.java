@@ -19,7 +19,7 @@ public class RefreshToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID tokenId;
+    private UUID id;
 
     // Assuming a user can have multiple refresh tokens (e.g., logged in on phone and laptop)
     // If you strictly want one token per user, change this to @OneToOne
@@ -27,9 +27,12 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "token", nullable = false, unique = true)
     private String token;
 
-    @Column(nullable = false)
+    @Column(name = "expires_at", nullable = false)
     private Instant expiryDate;
+
+    @Column(name = "revoked", nullable = false)
+    private Boolean revoked;
 }

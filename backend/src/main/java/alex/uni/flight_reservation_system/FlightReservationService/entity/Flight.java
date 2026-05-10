@@ -39,6 +39,9 @@ public class Flight {
     @Column(name = "arrival_time", nullable = false)
     private LocalDateTime arrivalTime;
 
-    @OneToMany(mappedBy = "flight")
-    private List<FlightReservation> reservations;
+    @Column(name = "terminal", nullable = false)
+    private String terminal;
+
+    @Column(name = "status", nullable = false)
+    private String status;
 }
