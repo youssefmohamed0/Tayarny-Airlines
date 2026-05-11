@@ -8,10 +8,26 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface FlightSeatStatusRepository extends JpaRepository<FlightSeatStatus, FlightSeatStatusId> {
+    // USER QUERIES
+
+    /**
+     * Gets the entire seat map for a specific flight.
+     * Used by the frontend to draw the airplane and show which seats are available.
+     */
+    List<FlightSeatStatus> findByFlightId(UUID flightId);
+
+    /**
+     * Finds one specific seat on a specific flight.
+     * Useful for single-seat lookups or quick status checks.
+     */
+    Optional<FlightSeatStatus> findByFlightIdAndSeatId(UUID flightId, UUID seatId);
+
+    // TRANSACTIONAL LOCKING QUERIES
 
     /**
      * Acquires a pessimistic (FOR UPDATE) lock on the requested seat rows.
