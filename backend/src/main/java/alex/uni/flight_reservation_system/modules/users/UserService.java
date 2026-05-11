@@ -1,13 +1,19 @@
 package alex.uni.flight_reservation_system.modules.users;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import alex.uni.flight_reservation_system.common.enums.ReservationStatus;
+import alex.uni.flight_reservation_system.modules.users.dto.AdminUsersResponse;
 import alex.uni.flight_reservation_system.modules.users.dto.UserResponse;
 import alex.uni.flight_reservation_system.modules.users.dto.UserUpdateRequest;
 import alex.uni.flight_reservation_system.modules.users.exception.ResourceNotFoundException;
@@ -17,6 +23,8 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public UserResponse getUserProfile() throws Exception {
@@ -50,7 +58,9 @@ public class UserService {
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
             user.setFullName(reqeust.getFullName());
             user.setEmail(reqeust.getEmail());
-            user.setPassword(reqeust.getPassword());
+            if (reqeust.getPassword() != null && !reqeust.getPassword().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(reqeust.getPassword()));
+            }
             userRepository.save(user);
             Integer totalFlights = (int) user.getReservations().stream()
                     .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
@@ -65,6 +75,35 @@ public class UserService {
                     .build();
         } catch (Exception e) {
             throw new ResourceNotFoundException("User not found: " + e.getMessage());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminUsersResponse> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        List<AdminUsersResponse> adminUsersResponses = new ArrayList<>();
+        for (User user : users) {
+            adminUsersResponses.add(AdminUsersResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .fullName(user.getFullName())
+                    .email(user.getEmail())
+                    .role(user.getRole().toString())
+                    .totalFlights((int) user.getReservations().stream()
+                            .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
+                            .count())
+                    .build());
+        }
+        return adminUsersResponses;
+    }
+
+    public void deleteUser(UUID id) throws ResourceNotFoundException {
+        try {
+            userRepository.deleteById(id);
+        } catch (ResourceNotFoundException e) {
+            throw new ResourceNotFoundException("User not found: " + id);
+        } catch (Exception e) {
+            throw new RuntimeException("Error deleting user: " + e.getMessage());
         }
     }
 }
