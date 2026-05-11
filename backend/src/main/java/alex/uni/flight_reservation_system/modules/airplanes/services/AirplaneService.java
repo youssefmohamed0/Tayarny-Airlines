@@ -2,8 +2,8 @@ package alex.uni.flight_reservation_system.modules.airplanes.services;
 
 import alex.uni.flight_reservation_system.modules.airplanes.Airplane;
 import alex.uni.flight_reservation_system.modules.airplanes.AirplaneModel;
-import alex.uni.flight_reservation_system.modules.airplanes.AirplaneModelRepository;
-import alex.uni.flight_reservation_system.modules.airplanes.AirplaneRepository;
+import alex.uni.flight_reservation_system.modules.airplanes.AirplaneRepo.AirplaneModelRepository;
+import alex.uni.flight_reservation_system.modules.airplanes.AirplaneRepo.AirplaneRepository;
 import alex.uni.flight_reservation_system.modules.airplanes.dto.AirplaneDto;
 import alex.uni.flight_reservation_system.modules.airplanes.dto.CreateAirplaneRequest;
 import jakarta.transaction.Transactional;

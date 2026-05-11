@@ -1,5 +1,6 @@
-package alex.uni.flight_reservation_system.modules.airplanes;
+package alex.uni.flight_reservation_system.modules.airplanes.AirplaneRepo;
 
+import alex.uni.flight_reservation_system.modules.airplanes.AirplaneModel;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
