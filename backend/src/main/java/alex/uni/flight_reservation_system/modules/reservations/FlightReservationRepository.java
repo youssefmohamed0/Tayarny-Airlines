@@ -12,6 +12,6 @@ public interface FlightReservationRepository extends JpaRepository<FlightReserva
     // Fetches all reservations (flight history) for a specific user ID
     List<FlightReservation> findByUserId(UUID userId);
     
-    // You could even sort them automatically so the newest flights show first!
-    List<FlightReservation> findByUserIdOrderByFlightDepartureTimeDesc(UUID userId);
+    // Navigates fareOption → flight → departureTime to sort newest first
+    List<FlightReservation> findByUserIdOrderByFareOptionFlightDepartureTimeDesc(UUID userId);
 }

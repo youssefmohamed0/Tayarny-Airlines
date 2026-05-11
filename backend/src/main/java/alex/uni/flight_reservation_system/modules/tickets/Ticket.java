@@ -7,7 +7,6 @@ import java.time.LocalDate;
 
 import alex.uni.flight_reservation_system.modules.reservations.FlightReservation;
 import alex.uni.flight_reservation_system.modules.seats.Seat;
-import alex.uni.flight_reservation_system.modules.fare_options.FareOption;
 import alex.uni.flight_reservation_system.common.enums.PassengerType;
 
 @Entity
@@ -26,10 +25,6 @@ public class Ticket {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seat_id", nullable = false)
     private Seat seat;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fare_option_id")
-    private FareOption fareOption;
 
     @Column(nullable = false)
     private Double price;
