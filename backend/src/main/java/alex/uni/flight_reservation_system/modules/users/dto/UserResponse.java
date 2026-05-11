@@ -20,4 +20,5 @@ public class UserResponse {
     private String username;
     @Enumerated(EnumType.STRING)
     private Role role;
+    private Integer totalFlights;
 }
