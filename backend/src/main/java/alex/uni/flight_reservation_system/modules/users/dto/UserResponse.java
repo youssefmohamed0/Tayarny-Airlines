@@ -18,6 +18,8 @@ import alex.uni.flight_reservation_system.common.enums.Role;
 public class UserResponse {
     private UUID id;
     private String username;
+    private String fullName;
+    private String email;
     @Enumerated(EnumType.STRING)
     private Role role;
     private Integer totalFlights;
