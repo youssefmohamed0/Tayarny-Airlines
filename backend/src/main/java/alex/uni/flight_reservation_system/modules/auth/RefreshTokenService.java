@@ -55,11 +55,11 @@ public class RefreshTokenService {
         if (!this.validateRefreshToken(refreshToken)) {
             throw new RuntimeException("Invalid or expired refresh token");
         }
-        UUID userId = refreshTokenRepository.findUserByToken(refreshToken).get().getId();
-        if (userId == null) {
-            throw new RuntimeException("Refresh token not found");
+        Optional<RefreshToken> tokenOpt = refreshTokenRepository.findByToken(refreshToken);
+        if (tokenOpt.isEmpty() || tokenOpt.get().getUser() == null) {
+            throw new RuntimeException("Refresh token not found or user is missing");
         }
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = tokenOpt.get().getUser();
         String newAccessToken = jwtService.generateToken(userDetailsService.loadUserByUsername(user.getUsername()));
         return new TokenRefreshResponse(newAccessToken, refreshToken);
     }
