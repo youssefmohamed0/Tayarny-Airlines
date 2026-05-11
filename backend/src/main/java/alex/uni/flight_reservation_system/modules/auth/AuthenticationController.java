@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import alex.uni.flight_reservation_system.modules.auth.dto.ApiResponse;
+import alex.uni.flight_reservation_system.modules.auth.dto.ApiResponse;
 import alex.uni.flight_reservation_system.modules.auth.dto.LoginRequest;
 import alex.uni.flight_reservation_system.modules.auth.dto.SignupRequest;
 import alex.uni.flight_reservation_system.modules.auth.dto.TokenRefreshRequest;
@@ -34,7 +36,7 @@ public class AuthenticationController {
             return ResponseEntity.ok(authenticationService.signup(signupRequest));
 
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(new ApiResponse(400, e.getMessage(), null));
         }
     }
 
@@ -44,7 +46,7 @@ public class AuthenticationController {
         try {
             return ResponseEntity.ok(authenticationService.login(loginRequest));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(new ApiResponse(400, e.getMessage(), null));
         }
     }
 
@@ -55,7 +57,7 @@ public class AuthenticationController {
             TokenRefreshResponse response = refreshTokenService.refreshAccessToken(request.getRefreshToken());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(new ApiResponse(400, e.getMessage(), null));
         }
     }
 
@@ -66,7 +68,7 @@ public class AuthenticationController {
             refreshTokenService.logUserOut(request);
             return ResponseEntity.ok("Log out successful!");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(new ApiResponse(400, e.getMessage(), null));
         }
     }
 }

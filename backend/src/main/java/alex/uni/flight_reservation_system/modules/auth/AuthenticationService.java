@@ -35,12 +35,15 @@ public class AuthenticationService {
         if (userRepository.existsByUsername(signupRequest.getUsername())) {
             throw new RuntimeException("Username Already exists"); // TODO: custom UserAlreadyExists exception
         }
+        if (userRepository.existsByEmail(signupRequest.getEmail())) {
+            throw new RuntimeException("Email Already exists"); // TODO: custom EmailAlreadyExists exception
+        }
         User newUser = User.builder()
                 .username(signupRequest.getUsername())
                 .password(passwordEncoder.encode(signupRequest.getPassword()))
                 .fullName(signupRequest.getFullName())
                 .email(signupRequest.getEmail())
-                .role(Role.valueOf(signupRequest.getRole()))
+                .role(Role.CUSTOMER)
                 .build();
         userRepository.save(newUser);
 

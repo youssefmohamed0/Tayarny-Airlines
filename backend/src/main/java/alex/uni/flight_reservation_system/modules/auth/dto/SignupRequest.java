@@ -19,7 +19,4 @@ public class SignupRequest {
     private String fullName;
     @NotBlank(message = "Email is required")
     private String email;
-    @NotBlank(message = "Role is required")
-    private String role;
-
 }
