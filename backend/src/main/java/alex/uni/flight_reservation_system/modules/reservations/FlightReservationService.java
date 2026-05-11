@@ -26,6 +26,7 @@ import alex.uni.flight_reservation_system.modules.users.User;
 import alex.uni.flight_reservation_system.modules.users.UserRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -212,12 +213,26 @@ public class FlightReservationService {
             throw new RuntimeException("Reservation is already cancelled");
         }
 
+        // Check cancellation window: must be at least 24 hours before departure
+        Flight flight = reservation.getFareOption().getFlight();
+        LocalDateTime departureTime = flight.getDepartureTime();
+        LocalDateTime now = LocalDateTime.now();
+
+        if (departureTime.isBefore(now)) {
+            throw new RuntimeException("Cannot cancel a reservation for a flight that has already departed");
+        }
+
+        if (departureTime.isBefore(now.plusHours(24))) {
+            throw new RuntimeException(
+                    "Cancellation is only allowed at least 24 hours before departure. "
+                    + "Flight departs at " + departureTime);
+        }
+
         // 1. Mark seats as AVAILABLE
         List<UUID> seatIds = reservation.getTickets().stream()
                 .map(t -> t.getSeat().getId())
                 .collect(Collectors.toList());
 
-        Flight flight = reservation.getFareOption().getFlight();
         List<FlightSeatStatus> seatStatuses = seatStatusRepository
                 .findByFlightIdAndSeatIdsForUpdate(flight.getId(), seatIds);
 
