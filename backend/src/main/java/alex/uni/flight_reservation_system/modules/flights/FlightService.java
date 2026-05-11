@@ -69,10 +69,16 @@ public class FlightService {
         flightRepository.save(flight);
     }
 
-    public void cancelFlight(UUID flightId) {
+    public void deleteFlight(UUID flightId) {
         if (!flightRepository.existsById(flightId)) {
-            throw new RuntimeException("Cannot cancel. Flight not found with ID: " + flightId);
+            throw new RuntimeException("Cannot delete. Flight not found with ID: " + flightId);
         }
         flightRepository.deleteById(flightId);
+    }
+
+    public List<Flight> getFlightByNumber(String flightNumber) {
+        return flightRepository.findByFlightNumber(flightNumber)
+                .map(List::of) // Wraps the single flight in a list
+                .orElse(List.of()); // Returns empty list if not found
     }
 }
