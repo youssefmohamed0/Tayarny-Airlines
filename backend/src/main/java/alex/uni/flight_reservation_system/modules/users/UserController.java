@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import alex.uni.flight_reservation_system.modules.auth.dto.ApiResponse;
 import alex.uni.flight_reservation_system.modules.users.dto.UserUpdateRequest;
 import alex.uni.flight_reservation_system.modules.users.exception.ResourceNotFoundException;
 
@@ -24,9 +25,13 @@ public class UserController {
         try {
             return ResponseEntity.ok(userService.getUserProfile());
         } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.builder()
+                    .message("User not found")
+                    .build());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.builder()
+                    .message("Internal server error")
+                    .build());
         }
     }
 
@@ -35,9 +40,13 @@ public class UserController {
         try {
             return ResponseEntity.ok(userService.updateProfile(reqeust));
         } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.builder()
+                    .message("User not found")
+                    .build());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.builder()
+                    .message("Internal server error")
+                    .build());
         }
     }
 

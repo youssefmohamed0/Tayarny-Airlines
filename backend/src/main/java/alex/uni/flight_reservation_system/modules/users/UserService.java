@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,8 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public UserResponse getUserProfile() throws Exception {
@@ -55,7 +58,9 @@ public class UserService {
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
             user.setFullName(reqeust.getFullName());
             user.setEmail(reqeust.getEmail());
-            user.setPassword(reqeust.getPassword());
+            if (reqeust.getPassword() != null && !reqeust.getPassword().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(reqeust.getPassword()));
+            }
             userRepository.save(user);
             Integer totalFlights = (int) user.getReservations().stream()
                     .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
