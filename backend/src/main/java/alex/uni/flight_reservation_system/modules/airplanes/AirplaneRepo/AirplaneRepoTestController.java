@@ -1,5 +1,7 @@
-package alex.uni.flight_reservation_system.modules.airplanes;
+package alex.uni.flight_reservation_system.modules.airplanes.AirplaneRepo;
 
+import alex.uni.flight_reservation_system.modules.airplanes.Airplane;
+import alex.uni.flight_reservation_system.modules.airplanes.AirplaneModel;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
