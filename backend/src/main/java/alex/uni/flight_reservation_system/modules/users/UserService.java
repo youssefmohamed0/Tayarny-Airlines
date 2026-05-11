@@ -97,13 +97,25 @@ public class UserService {
         return adminUsersResponses;
     }
 
-    public void deleteUser(UUID id) throws ResourceNotFoundException {
+    public void deleteUser(UUID id) throws ResourceNotFoundException { // admin only
         try {
             userRepository.deleteById(id);
         } catch (ResourceNotFoundException e) {
             throw new ResourceNotFoundException("User not found: " + id);
         } catch (Exception e) {
             throw new RuntimeException("Error deleting user: " + e.getMessage());
+        }
+    }
+
+    public void deleteProfile() throws ResourceNotFoundException { // user only
+        try {
+            UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication()
+                    .getPrincipal();
+            User user = userRepository.findByUsername(userDetails.getUsername())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            userRepository.delete(user);
+        } catch (Exception e) {
+            throw new RuntimeException("Error deleting profile: " + e.getMessage());
         }
     }
 }
