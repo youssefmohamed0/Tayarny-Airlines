@@ -3,6 +3,7 @@ package alex.uni.flight_reservation_system.modules.users;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,6 +40,24 @@ public class UserController {
     public ResponseEntity<?> updateProfile(@RequestBody UserUpdateRequest reqeust) {
         try {
             return ResponseEntity.ok(userService.updateProfile(reqeust));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.builder()
+                    .message("User not found")
+                    .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.builder()
+                    .message("Internal server error")
+                    .build());
+        }
+    }
+
+    @DeleteMapping("")
+    public ResponseEntity<?> deleteProfile() {
+        try {
+            userService.deleteProfile();
+            return ResponseEntity.ok(ApiResponse.builder()
+                    .message("Profile deleted successfully")
+                    .build());
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.builder()
                     .message("User not found")
