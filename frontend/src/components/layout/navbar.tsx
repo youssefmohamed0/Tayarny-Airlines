@@ -1,23 +1,29 @@
 'use client'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
+import { signOut } from 'next-auth/react'
+import { apiService } from '@/services/api'
 
 export default function Navbar({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  function logout() {
-    localStorage.clear()
+  async function logout() {
+    try {
+      await apiService.logout()
+    } catch {
+      // continue logout even if api call fails
+    }
+    await signOut({ redirect: false })
     router.push('/auth')
   }
 
   const links = [
     { label: '🏠 Dashboard', path: '/dashboard' },
-    { label: '🔍 Search flights', path: '/search' },
-    { label: '👤 Profile', path: '/profile' },
+    { label: '🔍 Search flights', path: '/dashboard/search' },
+    { label: '👤 Profile', path: '/dashboard/profile' },
   ]
 
-  // Hide navbar on auth page
   if (pathname === '/auth') {
     return <>{children}</>
   }
