@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { apiService } from '@/services/api'
 
 export default function AuthPage() {
   const router = useRouter()
@@ -14,20 +16,18 @@ export default function AuthPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://localhost/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginData)
+      const res = await signIn('credentials', {
+        username: loginData.username,
+        password: loginData.password,
+        redirect: false,
       })
-      const data = await res.json()
-      if (!res.ok) { setError(data.message || 'Login failed'); return }
-      localStorage.setItem('accessToken', data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
-      localStorage.setItem('role', data.role)
-      localStorage.setItem('username', data.username)
-      router.push('/dashboard')
-    } catch (err) {
-      setError('Network error. Is the backend running?')
+      if (res?.ok) {
+        router.push('/dashboard')
+      } else {
+        setError('Invalid username or password')
+      }
+    } catch {
+      setError('Network error. Is the backend runninggggggnuibasud?')
     } finally {
       setLoading(false)
     }
@@ -37,30 +37,21 @@ export default function AuthPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://localhost/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signupData)
+      const data = await apiService.signup(signupData.username, signupData.password, signupData.fullName, signupData.email)
+      if (!data.accessToken) { setError(data.message || 'Signup failed'); return }
+      await signIn('credentials', {
+        username: signupData.username,
+        password: signupData.password,
+        redirect: false,
       })
-      const data = await res.json()
-      if (!res.ok) { setError(data.message || 'Signup failed'); return }
-      localStorage.setItem('accessToken', data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
-      localStorage.setItem('role', data.role)
-      localStorage.setItem('username', data.username)
       router.push('/dashboard')
-    } catch (err) {
-      setError('Network error. Is the backend running?')
+    }catch (err) {
+      console.error("SIGNUP ERROR:", err);
+      // Change this line to show the actual message
+      setError(err instanceof Error ? err.message : "Connection failed to backend");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  function skipLogin() {
-    localStorage.setItem('accessToken', 'fake-token')
-    localStorage.setItem('username', 'john_doe')
-    localStorage.setItem('role', 'CUSTOMER')
-    router.push('/dashboard')
   }
 
   const inputStyle = {
@@ -77,7 +68,7 @@ export default function AuthPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
 
-      {/* left side — big image panel */}
+      {/* left side */}
       <div style={{
         flex: 1,
         background: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)',
@@ -95,7 +86,6 @@ export default function AuthPage() {
         <p style={{ fontSize: 18, color: '#a0c4d8', textAlign: 'center', maxWidth: 340, lineHeight: 1.7 }}>
           Search and book flights to anywhere in the world. Fast, easy, and reliable.
         </p>
-
         <div style={{ marginTop: '3rem', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {['🌍 Flights to 150+ destinations', '💺 Best prices guaranteed', '🕐 24/7 customer support'].map(item => (
             <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 16, color: '#cde' }}>
@@ -105,7 +95,7 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* right side — form */}
+      {/* right side */}
       <div style={{
         width: 480,
         display: 'flex',
@@ -154,12 +144,8 @@ export default function AuthPage() {
             </div>
             {error && <p style={{ color: '#e74c3c', fontSize: 14, margin: 0 }}>{error}</p>}
             <button onClick={handleLogin} disabled={loading}
-              style={{ padding: '14px', background: '#378ADD', color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 16, fontWeight: 600, marginTop: 4 }}>
+              style={{ padding: '14px', background: '#378ADD', color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 16, fontWeight: 600, marginTop: 4, fontFamily: 'inherit' }}>
               {loading ? 'Logging in...' : 'Login →'}
-            </button>
-            <button onClick={skipLogin}
-              style={{ padding: '12px', background: '#f5f5f5', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, color: '#888' }}>
-              Skip login (testing only)
             </button>
           </div>
         ) : (
@@ -190,7 +176,7 @@ export default function AuthPage() {
             </div>
             {error && <p style={{ color: '#e74c3c', fontSize: 14, margin: 0 }}>{error}</p>}
             <button onClick={handleSignup} disabled={loading}
-              style={{ padding: '14px', background: '#378ADD', color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 16, fontWeight: 600, marginTop: 4 }}>
+              style={{ padding: '14px', background: '#378ADD', color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 16, fontWeight: 600, marginTop: 4, fontFamily: 'inherit' }}>
               {loading ? 'Creating account...' : 'Create account →'}
             </button>
           </div>
