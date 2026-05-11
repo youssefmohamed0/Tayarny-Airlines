@@ -21,6 +21,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
   const links = [
     { label: '🏠 Dashboard', path: '/dashboard' },
     { label: '🔍 Search flights', path: '/search' },
+    { label: '🧾 Reservation history', path: '/reservationhistory' },
     { label: '👤 Profile', path: '/profile' },
   ]
 

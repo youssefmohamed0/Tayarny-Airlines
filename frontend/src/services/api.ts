@@ -30,13 +30,13 @@ class ApiService {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password, fullName, email }),
-    });
+    })
 
     if (!res.ok) {
-      throw new Error(`Server Error: ${res.status} ${res.statusText}`);
+      throw new Error(`Server Error: ${res.status} ${res.statusText}`)
     }
 
-    return res.json();
+    return res.json()
   }
 
   async logout() {
@@ -62,42 +62,120 @@ class ApiService {
    * GET /api/user
    */
   async getProfile() {
-    const headers = await this.#getHeaders();
+    const headers = await this.#getHeaders()
     const res = await fetch(`${this.#baseUrl}/api/user`, {
       method: 'GET',
       headers,
-    });
+    })
 
     if (!res.ok) {
-      throw new Error(`Failed to fetch profile: ${res.status}`);
+      throw new Error(`Failed to fetch profile: ${res.status}`)
     }
 
-    return res.json();
+    return res.json()
   }
 
   /**
    * Updates the user's profile (requires password for verification)
    * PUT /api/user
    */
-async updateProfile(userData: { fullName: string; email: string; password?: string }) {
-  const headers = await this.#getHeaders();
-  
-  // Create the body. If password is empty string, we can choose to omit it or send it as is
-  const body = { ...userData };
-  if (!body.password) delete body.password; 
+  async updateProfile(userData: { fullName: string; email: string; password?: string }) {
+    const headers = await this.#getHeaders()
 
-  const res = await fetch(`${this.#baseUrl}/api/user`, {
-    method: 'PUT',
+    const body = { ...userData }
+    if (!body.password) delete body.password
+
+    const res = await fetch(`${this.#baseUrl}/api/user`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) {
+      const errorMsg = await res.text()
+      throw new Error(errorMsg || 'Update failed')
+    }
+    return res.json()
+  }
+
+  // ── Reservations ────────────────────────────────────
+
+  /**
+   * Fetches all reservations for the current user
+   * GET /api/user/reservation
+   */
+async getReservations() {
+  const session = await getSession()
+  console.log('FULL SESSION:', JSON.stringify(session))
+  const headers = await this.#getHeaders()
+  console.log('AUTH HEADER:', headers['Authorization'])
+  
+  const res = await fetch(`${this.#baseUrl}/api/user/reservations`, {
+    method: 'GET',
     headers,
-    body: JSON.stringify(body),
-  });
+  })
 
   if (!res.ok) {
-    const errorMsg = await res.text();
-    throw new Error(errorMsg || 'Update failed');
+    throw new Error(`Failed to fetch reservations: ${res.status}`)
   }
-  return res.json();
+
+  return res.json()
 }
+
+  /**
+   * Fetches a single reservation by ID
+   * GET /api/user/reservation/:id
+   */
+  async getReservation(id: string) {
+    const headers = await this.#getHeaders()
+    const res = await fetch(`${this.#baseUrl}/api/user/reservations/${id}`, {
+      method: 'GET',
+      headers,
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch reservation: ${res.status}`)
+    }
+
+    return res.json()
+  }
+
+  /**
+   * Fetches all tickets for a reservation
+   * GET /api/user/reservation/:id/tickets
+   */
+  async getReservationTickets(id: string) {
+    const headers = await this.#getHeaders()
+    const res = await fetch(`${this.#baseUrl}/api/user/reservations/${id}/tickets`, {
+      method: 'GET',
+      headers,
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch tickets: ${res.status}`)
+    }
+
+    return res.json()
+  }
+
+  /**
+   * Cancels a reservation by ID
+   * PUT /api/user/reservation/:id/cancel
+   */
+  async cancelReservation(id: string) {
+    const headers = await this.#getHeaders()
+    const res = await fetch(`${this.#baseUrl}/api/user/reservation/${id}/cancel`, {
+      method: 'PUT',
+      headers,
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to cancel reservation: ${res.status}`)
+    }
+
+    return res.json()
+  }
+  
 }
 
 export const apiService = new ApiService()
