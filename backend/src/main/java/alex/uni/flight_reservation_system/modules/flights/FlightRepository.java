@@ -7,10 +7,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface FlightRepository extends JpaRepository<Flight, UUID> {
+
+    Optional<Flight> findByFlightNumber(String flightNumber);
 
     // Derived Query: Finds flights between specific airports departing after a certain time
     List<Flight> findByOriginAirportIdAndDestinationAirportIdAndDepartureTimeAfter(
