@@ -59,7 +59,7 @@ public class SecurityConfig {
                         auth -> auth.requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers("/api/searchflights/**").permitAll()
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
+                                .requestMatchers("/api/user/**").hasRole("CUSTOMER")
                                 .anyRequest().authenticated());
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
