@@ -20,8 +20,8 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
 
   const links = [
     { label: '🏠 Dashboard', path: '/dashboard' },
-    { label: '🔍 Search flights', path: '/dashboard/search' },
-    { label: '👤 Profile', path: '/dashboard/profile' },
+    { label: '🔍 Search flights', path: '/search' },
+    { label: '👤 Profile', path: '/profile' },
   ]
 
   if (pathname === '/auth') {
