@@ -13,12 +13,14 @@ public class Airport {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "city_id", nullable = false)
-    private City city;
-
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
+    private String city;
+
+    @Column(nullable = false)
+    private String country;
 
     @Column(name = "iata_code", length = 3, nullable = false, unique = true)
     private String iataCode;

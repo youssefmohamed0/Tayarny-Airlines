@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.UUID;
 
 import alex.uni.flight_reservation_system.modules.users.User;
-import alex.uni.flight_reservation_system.modules.flights.Flight;
 import alex.uni.flight_reservation_system.modules.fare_options.FareOption;
 import alex.uni.flight_reservation_system.modules.tickets.Ticket;
 import alex.uni.flight_reservation_system.common.enums.ReservationStatus;
@@ -25,10 +24,6 @@ public class FlightReservation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false) // The foreign key column
     private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "flight_id", nullable = false)
-    private Flight flight;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fare_option_id", nullable = false)
