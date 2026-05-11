@@ -11,4 +11,7 @@ public interface SeatRepository extends JpaRepository<Seat, UUID> {
 
     // Grabs the physical layout template for a specific plane model
     List<Seat> findByAirplaneModelId(UUID modelId);
+
+    // Resolve seat names to entities for a specific airplane model (used in checkout)
+    List<Seat> findByAirplaneModelIdAndSeatNumIn(UUID modelId, List<String> seatNums);
 }
