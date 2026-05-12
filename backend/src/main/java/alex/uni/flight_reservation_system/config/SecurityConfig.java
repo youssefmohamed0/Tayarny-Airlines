@@ -59,6 +59,7 @@ public class SecurityConfig {
                     auth -> auth.requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
                                 .requestMatchers("/api/searchflights/**").permitAll()
+                                .requestMatchers("/api/user/airports", "/api/user/airports/**").permitAll()
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/user/**").hasRole("CUSTOMER")
                                 .anyRequest().authenticated());

@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { apiService } from '@/services/api'
+import { signIn, getSession } from 'next-auth/react'
 
 export default function AuthPage() {
   const router = useRouter()
@@ -12,27 +12,31 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleLogin() {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await signIn('credentials', {
-        username: loginData.username,
-        password: loginData.password,
-        redirect: false,
-      })
-      if (res?.ok) {
-        router.push('/dashboard')
+ async function handleLogin() {
+  setLoading(true)
+  setError('')
+  try {
+    const res = await signIn('credentials', {
+      username: loginData.username,
+      password: loginData.password,
+      redirect: false,
+    })
+    if (res?.ok) {
+      const session = await getSession()
+      if (session?.user?.role === 'ADMIN') {
+        router.push('/admin')
       } else {
-        setError('Invalid username or password')
+        router.push('/dashboard')
       }
-    } catch {
-      setError('Network error. Is the backend runninggggggnuibasud?')
-    } finally {
-      setLoading(false)
+    } else {
+      setError('Invalid username or password')
     }
+  } catch {
+    setError('Network error. Is the backend running?')
+  } finally {
+    setLoading(false)
   }
-
+}
   async function handleSignup() {
     setLoading(true)
     setError('')
