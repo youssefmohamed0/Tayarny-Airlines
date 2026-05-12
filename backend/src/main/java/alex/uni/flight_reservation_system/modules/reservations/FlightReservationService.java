@@ -2,6 +2,8 @@ package alex.uni.flight_reservation_system.modules.reservations;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -170,15 +172,13 @@ public class FlightReservationService {
     // USER — booking history (readOnly keeps a session open for lazy loading)
     // =========================================================================
     @Transactional(readOnly = true)
-    public List<ReservationResponse> getMyReservations() {
+    public Page<ReservationResponse> getMyReservations(Pageable pageable) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return reservationRepository.findByUserIdOrderByFareOptionFlightDepartureTimeDesc(user.getId())
-                .stream()
-                .map(this::toReservationResponse)
-                .collect(Collectors.toList());
+        return reservationRepository.findByUserIdOrderByFareOptionFlightDepartureTimeDesc(user.getId(), pageable)
+                .map(this::toReservationResponse);
     }
 
     @Transactional(readOnly = true)
@@ -393,10 +393,9 @@ public class FlightReservationService {
 
     // =========================================================================
     @Transactional(readOnly = true)
-    public List<AdminReservationResponse> getAllReservations() {
-        return reservationRepository.findAll().stream()
-                .map(this::toAdminReservationResponse)
-                .collect(Collectors.toList());
+    public Page<AdminReservationResponse> getAllReservations(Pageable pageable) {
+        return reservationRepository.findAll(pageable)
+                .map(this::toAdminReservationResponse);
     }
 
     @Transactional(readOnly = true)

@@ -6,7 +6,10 @@ import org.springframework.web.bind.annotation.*;
 
 import alex.uni.flight_reservation_system.modules.reservations.dto.AdminReservationResponse;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.util.UUID;
 
 @RestController
@@ -17,9 +20,12 @@ public class AdminReservationController {
     private FlightReservationService reservationService;
 
     @GetMapping
-    public ResponseEntity<?> getAllReservations() {
+    public ResponseEntity<?> getAllReservations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         try {
-            List<AdminReservationResponse> reservations = reservationService.getAllReservations();
+            Pageable pageable = PageRequest.of(page, size);
+            Page<AdminReservationResponse> reservations = reservationService.getAllReservations(pageable);
             return ResponseEntity.ok(reservations);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

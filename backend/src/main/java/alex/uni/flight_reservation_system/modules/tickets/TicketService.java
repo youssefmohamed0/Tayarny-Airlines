@@ -1,6 +1,8 @@
 package alex.uni.flight_reservation_system.modules.tickets;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,10 +26,9 @@ public class TicketService {
     }
 
     @Transactional(readOnly = true)
-    public List<TicketResponse> getAllTickets() {
-        return ticketRepository.findAll().stream()
-                .map(this::toTicketResponse)
-                .collect(Collectors.toList());
+    public Page<TicketResponse> getAllTickets(Pageable pageable) {
+        return ticketRepository.findAll(pageable)
+                .map(this::toTicketResponse);
     }
 
     @Transactional(readOnly = true)
