@@ -122,7 +122,6 @@ public class UserFlightController {
 
                     return UserFlightSearchResponse.UserFareOptionDto.builder()
                             .fareName(fare.getFareName())
-                            .priceToken(fare.getId().toString())
                             .totalPrice(totalPrice)
                             .priceBreakdown(UserFlightSearchResponse.PriceBreakdownDto.builder()
                                     .adult(UserFlightSearchResponse.PassengerPriceDto.builder()
