@@ -7,6 +7,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import alex.uni.flight_reservation_system.common.enums.FlightStatus;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FlightService {
@@ -61,7 +64,7 @@ public class FlightService {
         return flightRepository.save(flight);
     }
 
-    public void updateFlightStatus(UUID flightId, String status) {
+    public void updateFlightStatus(UUID flightId, FlightStatus status) {
         Flight flight = flightRepository.findById(flightId)
                 .orElseThrow(() -> new RuntimeException("Flight not found with ID: " + flightId));
 
@@ -80,5 +83,18 @@ public class FlightService {
         return flightRepository.findByFlightNumber(flightNumber)
                 .map(List::of) // Wraps the single flight in a list
                 .orElse(List.of()); // Returns empty list if not found
+    }
+
+    // BACKGROUND JOBS
+
+    @Scheduled(fixedRate = 120000)
+    @Transactional
+    public void updateCompletedFlights() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Flight> scheduledFlights = flightRepository.findByStatusAndArrivalTimeBefore(FlightStatus.SCHEDULED, now);
+        for (Flight flight : scheduledFlights) {
+            flight.setStatus(FlightStatus.COMPLETED);
+            flightRepository.save(flight);
+        }
     }
 }

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import alex.uni.flight_reservation_system.common.enums.FlightStatus;
 
 @Repository
 public interface FlightRepository extends JpaRepository<Flight, UUID> {
@@ -36,8 +37,8 @@ public interface FlightRepository extends JpaRepository<Flight, UUID> {
            "JOIN FETCH a.model")
     List<Flight> findAllWithDetails();
 
-    // Derived Query: Finds flights that have arrived but are not in a specific status
-    List<Flight> findByArrivalTimeBeforeAndStatusNot(LocalDateTime currentTime, String status);
+    // Derived Query: Finds flights that are in a specific status before a certain time
+    List<Flight> findByStatusAndArrivalTimeBefore(FlightStatus status, LocalDateTime time);
 
     // Derived Query: Finds flights between specific airports departing after a certain time
     List<Flight> findByOriginAirportIdAndDestinationAirportIdAndDepartureTimeAfter(

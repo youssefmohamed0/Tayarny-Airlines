@@ -12,6 +12,7 @@ import alex.uni.flight_reservation_system.modules.flights.Flight;
 import alex.uni.flight_reservation_system.modules.flights.FlightService;
 import alex.uni.flight_reservation_system.modules.flights.dto.AdminFlightRequest;
 import alex.uni.flight_reservation_system.modules.flights.dto.AdminFlightResponse;
+import alex.uni.flight_reservation_system.common.enums.FlightStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -134,7 +135,7 @@ public class AdminFlightController {
         flight.setDepartureTime(request.getDeparture().getTime());
         flight.setArrivalTime(request.getArrival().getTime());
         flight.setTerminal(request.getDeparture().getTerminal());
-        flight.setStatus("SCHEDULED");
+        flight.setStatus(FlightStatus.SCHEDULED);
 
         // Resolve origin airport by IATA code
         Airport origin = airportRepository.findByIataCode(request.getDeparture().getAirport())

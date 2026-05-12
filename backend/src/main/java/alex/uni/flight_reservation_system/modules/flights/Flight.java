@@ -8,6 +8,7 @@ import java.util.UUID;
 import alex.uni.flight_reservation_system.modules.airports.Airport;
 import alex.uni.flight_reservation_system.modules.airplanes.Airplane;
 import alex.uni.flight_reservation_system.modules.fare_options.FareOption;
+import alex.uni.flight_reservation_system.common.enums.FlightStatus;
 import java.util.List;
 
 @Entity
@@ -43,8 +44,9 @@ public class Flight {
     @Column(name = "terminal", nullable = false)
     private String terminal;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status;
+    private FlightStatus status;
 
     @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FareOption> fareOptions;
