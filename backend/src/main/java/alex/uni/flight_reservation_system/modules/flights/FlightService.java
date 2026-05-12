@@ -311,6 +311,7 @@ public class FlightService {
                 .flightId(flight.getId())
                 .flightNumber(flight.getFlightNumber())
                 .aircraft(flight.getAirplane().getModel().getModelName())
+                .status(flight.getStatus())
                 .departure(AdminFlightResponse.DepartureDto.builder()
                         .airport(flight.getOriginAirport().getIataCode())
                         .terminal(flight.getTerminal())
