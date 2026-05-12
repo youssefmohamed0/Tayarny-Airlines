@@ -1,11 +1,17 @@
 package alex.uni.flight_reservation_system.modules.flights.controller;
 
+import alex.uni.flight_reservation_system.modules.airplanes.Airplane;
+import alex.uni.flight_reservation_system.modules.airplanes.AirplaneModel;
+import alex.uni.flight_reservation_system.modules.airplanes.AirplaneRepo.AirplaneModelRepository;
+import alex.uni.flight_reservation_system.modules.airplanes.AirplaneRepo.AirplaneRepository;
+import alex.uni.flight_reservation_system.modules.airports.Airport;
+import alex.uni.flight_reservation_system.modules.airports.AirportRepository;
+import alex.uni.flight_reservation_system.modules.fare_options.FareOption;
+import alex.uni.flight_reservation_system.modules.fare_options.FareOptionService;
 import alex.uni.flight_reservation_system.modules.flights.Flight;
 import alex.uni.flight_reservation_system.modules.flights.FlightService;
-import alex.uni.flight_reservation_system.modules.flights.dto.CreateFlightRequest;
-import alex.uni.flight_reservation_system.modules.flights.dto.FlightResponse;
-import alex.uni.flight_reservation_system.modules.airplanes.AirplaneRepo.AirplaneRepository;
-import alex.uni.flight_reservation_system.modules.airports.AirportRepository;
+import alex.uni.flight_reservation_system.modules.flights.dto.AdminFlightRequest;
+import alex.uni.flight_reservation_system.modules.flights.dto.AdminFlightResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,15 +26,21 @@ import java.util.stream.Collectors;
 public class AdminFlightController {
 
     private final FlightService flightService;
+    private final FareOptionService fareOptionService;
     private final AirplaneRepository airplaneRepository;
+    private final AirplaneModelRepository airplaneModelRepository;
     private final AirportRepository airportRepository;
 
     @Autowired
     public AdminFlightController(FlightService flightService,
+            FareOptionService fareOptionService,
             AirplaneRepository airplaneRepository,
+            AirplaneModelRepository airplaneModelRepository,
             AirportRepository airportRepository) {
         this.flightService = flightService;
+        this.fareOptionService = fareOptionService;
         this.airplaneRepository = airplaneRepository;
+        this.airplaneModelRepository = airplaneModelRepository;
         this.airportRepository = airportRepository;
     }
 
@@ -37,20 +49,22 @@ public class AdminFlightController {
     // GET /api/admin/flight?flightNumber=MS777
     // ==========================================
     @GetMapping("/flight")
-    public ResponseEntity<List<FlightResponse>> getFlights(
+    public ResponseEntity<List<AdminFlightResponse>> getFlights(
             @RequestParam(required = false) String flightNumber) {
 
         List<Flight> flights;
 
         if (flightNumber != null && !flightNumber.isEmpty()) {
-            // If a number is provided, we find that specific one
             flights = flightService.getFlightByNumber(flightNumber);
         } else {
-            // Otherwise, get all
             flights = flightService.getAllFlights();
         }
 
-        return ResponseEntity.ok(flights.stream().map(this::mapToResponse).collect(Collectors.toList()));
+        List<AdminFlightResponse> responses = flights.stream()
+                .map(this::mapToAdminResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
     }
 
     // ==========================================
@@ -58,24 +72,15 @@ public class AdminFlightController {
     // POST /api/admin/flight
     // ==========================================
     @PostMapping("/flight")
-    public ResponseEntity<FlightResponse> addFlight(@RequestBody CreateFlightRequest request) {
-        Flight flight = new Flight();
-
-        // Map DTO to Entity
-        flight.setFlightNumber(request.getFlightNumber());
-        flight.setDepartureTime(request.getDepartureTime());
-        flight.setArrivalTime(request.getArrivalTime());
-
-        // Fetch the actual objects using the IDs from the request
-        flight.setAirplane(airplaneRepository.findById(request.getAirplaneId())
-                .orElseThrow(() -> new RuntimeException("Airplane not found")));
-        flight.setOriginAirport(airportRepository.findById(request.getOriginAirportId())
-                .orElseThrow(() -> new RuntimeException("Origin Airport not found")));
-        flight.setDestinationAirport(airportRepository.findById(request.getDestinationAirportId())
-                .orElseThrow(() -> new RuntimeException("Destination Airport not found")));
+    public ResponseEntity<AdminFlightResponse> addFlight(@RequestBody AdminFlightRequest request) {
+        Flight flight = mapRequestToEntity(request);
 
         Flight savedFlight = flightService.addFlight(flight);
-        return ResponseEntity.ok(mapToResponse(savedFlight));
+
+        // Save nested fare options
+        saveFareOptions(request.getFareOptions(), savedFlight);
+
+        return ResponseEntity.ok(mapToAdminResponse(flightService.getFlightById(savedFlight.getId())));
     }
 
     // ==========================================
@@ -83,20 +88,25 @@ public class AdminFlightController {
     // PUT /api/admin/flight?flightId=98765
     // ==========================================
     @PutMapping("/flight")
-    public ResponseEntity<FlightResponse> modifyFlight(
+    public ResponseEntity<AdminFlightResponse> modifyFlight(
             @RequestParam UUID flightId,
-            @RequestBody CreateFlightRequest request) {
+            @RequestBody AdminFlightRequest request) {
 
-        // Find existing flight
         Flight flight = flightService.getFlightById(flightId);
 
-        // Update fields
-        flight.setFlightNumber(request.getFlightNumber());
-        flight.setDepartureTime(request.getDepartureTime());
-        flight.setArrivalTime(request.getArrivalTime());
+        // Update flight fields from the request
+        updateFlightFromRequest(flight, request);
 
         Flight updatedFlight = flightService.updateFlight(flight);
-        return ResponseEntity.ok(mapToResponse(updatedFlight));
+
+        // Delete existing fare options and re-create from request
+        List<FareOption> existingFares = fareOptionService.getFareOptionsForFlight(flightId);
+        for (FareOption fare : existingFares) {
+            fareOptionService.deleteFareOption(fare.getId());
+        }
+        saveFareOptions(request.getFareOptions(), updatedFlight);
+
+        return ResponseEntity.ok(mapToAdminResponse(flightService.getFlightById(updatedFlight.getId())));
     }
 
     // ==========================================
@@ -110,18 +120,129 @@ public class AdminFlightController {
     }
 
     // ==========================================
-    // HELPER: Map Entity to Response DTO
+    // HELPERS
     // ==========================================
-    private FlightResponse mapToResponse(Flight flight) {
-        return FlightResponse.builder()
-                .id(flight.getId())
+
+    /**
+     * Maps an AdminFlightRequest to a new Flight entity.
+     * Resolves IATA codes → Airport entities and aircraft name → Airplane entity.
+     */
+    private Flight mapRequestToEntity(AdminFlightRequest request) {
+        Flight flight = new Flight();
+
+        flight.setFlightNumber(request.getFlightNumber());
+        flight.setDepartureTime(request.getDeparture().getTime());
+        flight.setArrivalTime(request.getArrival().getTime());
+        flight.setTerminal(request.getDeparture().getTerminal());
+        flight.setStatus("SCHEDULED");
+
+        // Resolve origin airport by IATA code
+        Airport origin = airportRepository.findByIataCode(request.getDeparture().getAirport())
+                .orElseThrow(() -> new RuntimeException(
+                        "Origin airport not found: " + request.getDeparture().getAirport()));
+        flight.setOriginAirport(origin);
+
+        // Resolve destination airport by IATA code
+        Airport destination = airportRepository.findByIataCode(request.getArrival().getAirport())
+                .orElseThrow(() -> new RuntimeException(
+                        "Destination airport not found: " + request.getArrival().getAirport()));
+        flight.setDestinationAirport(destination);
+
+        // Resolve airplane by model name (pick the first available airplane of that model)
+        AirplaneModel model = airplaneModelRepository.findByModelName(request.getAircraft())
+                .orElseThrow(() -> new RuntimeException(
+                        "Airplane model not found: " + request.getAircraft()));
+        List<Airplane> airplanes = airplaneRepository.findByModel(model);
+        if (airplanes.isEmpty()) {
+            throw new RuntimeException("No airplanes available for model: " + request.getAircraft());
+        }
+        flight.setAirplane(airplanes.get(0));
+
+        return flight;
+    }
+
+    /**
+     * Updates an existing Flight entity fields from the request.
+     */
+    private void updateFlightFromRequest(Flight flight, AdminFlightRequest request) {
+        flight.setFlightNumber(request.getFlightNumber());
+        flight.setDepartureTime(request.getDeparture().getTime());
+        flight.setArrivalTime(request.getArrival().getTime());
+        flight.setTerminal(request.getDeparture().getTerminal());
+
+        Airport origin = airportRepository.findByIataCode(request.getDeparture().getAirport())
+                .orElseThrow(() -> new RuntimeException(
+                        "Origin airport not found: " + request.getDeparture().getAirport()));
+        flight.setOriginAirport(origin);
+
+        Airport destination = airportRepository.findByIataCode(request.getArrival().getAirport())
+                .orElseThrow(() -> new RuntimeException(
+                        "Destination airport not found: " + request.getArrival().getAirport()));
+        flight.setDestinationAirport(destination);
+
+        AirplaneModel model = airplaneModelRepository.findByModelName(request.getAircraft())
+                .orElseThrow(() -> new RuntimeException(
+                        "Airplane model not found: " + request.getAircraft()));
+        List<Airplane> airplanes = airplaneRepository.findByModel(model);
+        if (airplanes.isEmpty()) {
+            throw new RuntimeException("No airplanes available for model: " + request.getAircraft());
+        }
+        flight.setAirplane(airplanes.get(0));
+    }
+
+    /**
+     * Saves fare options from the request DTO list, linking them to the given flight.
+     */
+    private void saveFareOptions(List<AdminFlightRequest.AdminFareOptionDto> fareDtos, Flight flight) {
+        if (fareDtos == null || fareDtos.isEmpty()) {
+            return;
+        }
+
+        List<FareOption> fareOptions = fareDtos.stream().map(dto -> {
+            FareOption fare = new FareOption();
+            fare.setFlight(flight);
+            fare.setFareName(dto.getFareName());
+            fare.setCabinClass(dto.getFareName()); // Derive cabin class from fare name
+            fare.setPricePerAdult(dto.getPricePerSeat());
+            fare.setPricePerChild(dto.getPricePerSeat());
+            fare.setAvailableSeats(dto.getAvailableSeats());
+            fare.setBenefits(dto.getBenefits());
+            return fare;
+        }).collect(Collectors.toList());
+
+        fareOptionService.addMultipleFareOptions(fareOptions);
+    }
+
+    /**
+     * Maps a Flight entity + its fare options to the admin response DTO.
+     */
+    private AdminFlightResponse mapToAdminResponse(Flight flight) {
+        // Load fare options for this flight
+        List<FareOption> fareOptions = fareOptionService.getFareOptionsForFlight(flight.getId());
+
+        List<AdminFlightResponse.AdminFareOptionDto> fareDtos = fareOptions.stream()
+                .map(fare -> AdminFlightResponse.AdminFareOptionDto.builder()
+                        .fareName(fare.getFareName())
+                        .pricePerSeat(fare.getPricePerAdult()) // Using pricePerAdult as the canonical price
+                        .benefits(fare.getBenefits())
+                        .availableSeats(fare.getAvailableSeats())
+                        .build())
+                .collect(Collectors.toList());
+
+        return AdminFlightResponse.builder()
+                .flightId(flight.getId())
                 .flightNumber(flight.getFlightNumber())
-                .airplaneModel(flight.getAirplane().getModel().getModelName())
-                .originAirportName(flight.getOriginAirport().getName())
-                .destinationAirportName(flight.getDestinationAirport().getName())
-                .departureTime(flight.getDepartureTime())
-                .arrivalTime(flight.getArrivalTime())
-                .status(flight.getStatus())
+                .aircraft(flight.getAirplane().getModel().getModelName())
+                .departure(AdminFlightResponse.DepartureDto.builder()
+                        .airport(flight.getOriginAirport().getIataCode())
+                        .terminal(flight.getTerminal())
+                        .time(flight.getDepartureTime())
+                        .build())
+                .arrival(AdminFlightResponse.ArrivalDto.builder()
+                        .airport(flight.getDestinationAirport().getIataCode())
+                        .time(flight.getArrivalTime())
+                        .build())
+                .fareOptions(fareDtos)
                 .build();
     }
 }

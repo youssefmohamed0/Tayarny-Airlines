@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import alex.uni.flight_reservation_system.modules.airports.Airport;
 import alex.uni.flight_reservation_system.modules.airplanes.Airplane;
+import alex.uni.flight_reservation_system.modules.fare_options.FareOption;
+import java.util.List;
 
 @Entity
 @Table(name = "flights")
@@ -43,4 +45,10 @@ public class Flight {
 
     @Column(name = "status", nullable = false)
     private String status;
+
+    @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FareOption> fareOptions;
+
+    @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FlightSeatStatus> seatStatuses;
 }
