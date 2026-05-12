@@ -1,5 +1,7 @@
 package alex.uni.flight_reservation_system.modules.reservations;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,5 +15,8 @@ public interface FlightReservationRepository extends JpaRepository<FlightReserva
     List<FlightReservation> findByUserId(UUID userId);
     
     // Navigates fareOption → flight → departureTime to sort newest first
-    List<FlightReservation> findByUserIdOrderByFareOptionFlightDepartureTimeDesc(UUID userId);
+    Page<FlightReservation> findByUserIdOrderByFareOptionFlightDepartureTimeDesc(UUID userId, Pageable pageable);
+
+    // Fetches all reservations for a specific flight
+    List<FlightReservation> findByFareOptionFlightId(UUID flightId);
 }

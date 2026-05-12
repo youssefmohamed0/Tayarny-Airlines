@@ -2,6 +2,8 @@ package alex.uni.flight_reservation_system.modules.reservations;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,7 @@ import alex.uni.flight_reservation_system.modules.reservations.dto.TravelerInfo;
 import alex.uni.flight_reservation_system.modules.seats.Seat;
 import alex.uni.flight_reservation_system.modules.seats.SeatRepository;
 import alex.uni.flight_reservation_system.modules.tickets.Ticket;
+import alex.uni.flight_reservation_system.modules.tickets.TicketRepository;
 import alex.uni.flight_reservation_system.modules.tickets.dto.TicketResponse;
 import alex.uni.flight_reservation_system.modules.users.User;
 import alex.uni.flight_reservation_system.modules.users.UserRepository;
@@ -50,6 +53,8 @@ public class FlightReservationService {
     private SeatRepository seatRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private TicketRepository ticketRepository;
 
     // =========================================================================
     // CHECKOUT — atomic booking transaction
@@ -141,6 +146,7 @@ public class FlightReservationService {
             ticket.setSeat(seatMap.get(traveler.getAssignedSeat()));
             ticket.setPassengerName(traveler.getFullName());
             ticket.setPassengerType(PassengerType.valueOf(traveler.getType().toUpperCase()));
+            ticket.setStatus(ReservationStatus.CONFIRMED);
             ticket.setPrice("ADULT".equalsIgnoreCase(traveler.getType())
                     ? fareOption.getPricePerAdult()
                     : fareOption.getPricePerChild());
@@ -166,15 +172,13 @@ public class FlightReservationService {
     // USER — booking history (readOnly keeps a session open for lazy loading)
     // =========================================================================
     @Transactional(readOnly = true)
-    public List<ReservationResponse> getMyReservations() {
+    public Page<ReservationResponse> getMyReservations(Pageable pageable) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return reservationRepository.findByUserIdOrderByFareOptionFlightDepartureTimeDesc(user.getId())
-                .stream()
-                .map(this::toReservationResponse)
-                .collect(Collectors.toList());
+        return reservationRepository.findByUserIdOrderByFareOptionFlightDepartureTimeDesc(user.getId(), pageable)
+                .map(this::toReservationResponse);
     }
 
     @Transactional(readOnly = true)
@@ -225,7 +229,7 @@ public class FlightReservationService {
         if (departureTime.isBefore(now.plusHours(24))) {
             throw new RuntimeException(
                     "Cancellation is only allowed at least 24 hours before departure. "
-                    + "Flight departs at " + departureTime);
+                            + "Flight departs at " + departureTime);
         }
 
         return processCancellation(reservation, flight);
@@ -248,7 +252,8 @@ public class FlightReservationService {
         LocalDateTime now = LocalDateTime.now();
 
         // Admins can cancel up to the time of departure (bypassing the 24-hour rule).
-        // If you want admins to cancel even AFTER departure (e.g. for refunds/mistakes),
+        // If you want admins to cancel even AFTER departure (e.g. for
+        // refunds/mistakes),
         // you can remove this check entirely.
         if (departureTime.isBefore(now)) {
             throw new RuntimeException("Cannot cancel a reservation for a flight that has already departed");
@@ -277,21 +282,120 @@ public class FlightReservationService {
         fareOption.setAvailableSeats(fareOption.getAvailableSeats() + reservation.getNumSeats());
         fareOptionRepository.save(fareOption);
 
-        // 3. Mark reservation as cancelled
+        // 3. Mark reservation and its tickets as cancelled
         reservation.setStatus(ReservationStatus.CANCELLED);
+        if (reservation.getTickets() != null) {
+            for (Ticket ticket : reservation.getTickets()) {
+                ticket.setStatus(ReservationStatus.CANCELLED);
+            }
+        }
         reservation = reservationRepository.save(reservation);
 
         return toReservationResponse(reservation);
     }
 
     // =========================================================================
+    // USER — cancel ticket
+    // =========================================================================
+    @Transactional
+    public TicketResponse cancelTicket(UUID ticketId) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+        FlightReservation reservation = ticket.getReservation();
+
+        if (!reservation.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Ticket does not belong to this user");
+        }
+
+        if (ticket.getStatus() == ReservationStatus.CANCELLED) {
+            throw new RuntimeException("Ticket is already cancelled");
+        }
+
+        Flight flight = reservation.getFareOption().getFlight();
+        LocalDateTime departureTime = flight.getDepartureTime();
+        LocalDateTime now = LocalDateTime.now();
+
+        if (departureTime.isBefore(now)) {
+            throw new RuntimeException("Cannot cancel a ticket for a flight that has already departed");
+        }
+
+        if (departureTime.isBefore(now.plusHours(24))) {
+            throw new RuntimeException(
+                    "Cancellation is only allowed at least 24 hours before departure. "
+                            + "Flight departs at " + departureTime);
+        }
+
+        return processTicketCancellation(ticket, reservation, flight);
+    }
+
+    // =========================================================================
+    // ADMIN — cancel ticket
+    // =========================================================================
+    @Transactional
+    public TicketResponse adminCancelTicket(UUID ticketId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+        if (ticket.getStatus() == ReservationStatus.CANCELLED) {
+            throw new RuntimeException("Ticket is already cancelled");
+        }
+
+        FlightReservation reservation = ticket.getReservation();
+        Flight flight = reservation.getFareOption().getFlight();
+        LocalDateTime departureTime = flight.getDepartureTime();
+        LocalDateTime now = LocalDateTime.now();
+
+        if (departureTime.isBefore(now)) {
+            throw new RuntimeException("Cannot cancel a ticket for a flight that has already departed");
+        }
+
+        return processTicketCancellation(ticket, reservation, flight);
+    }
+
+    private TicketResponse processTicketCancellation(Ticket ticket, FlightReservation reservation, Flight flight) {
+        // 1. Mark seat as AVAILABLE
+        List<FlightSeatStatus> seatStatuses = seatStatusRepository
+                .findByFlightIdAndSeatIdsForUpdate(flight.getId(), List.of(ticket.getSeat().getId()));
+
+        for (FlightSeatStatus status : seatStatuses) {
+            status.setStatus(FlightSeatStatusEnum.AVAILABLE);
+        }
+        seatStatusRepository.saveAll(seatStatuses);
+
+        // 2. Increment available seats on fare option
+        FareOption fareOption = reservation.getFareOption();
+        fareOption.setAvailableSeats(fareOption.getAvailableSeats() + 1);
+        fareOptionRepository.save(fareOption);
+
+        // 3. Update reservation (price, num_seats)
+        reservation.setNumSeats(reservation.getNumSeats() - 1);
+        reservation.setTotalPrice(reservation.getTotalPrice() - ticket.getPrice());
+
+        // 4. Mark ticket as cancelled
+        ticket.setStatus(ReservationStatus.CANCELLED);
+        ticket = ticketRepository.save(ticket);
+
+        if (reservation.getNumSeats() == 0) {
+            reservation.setStatus(ReservationStatus.CANCELLED);
+        }
+        reservationRepository.save(reservation);
+
+        return toTicketResponse(ticket);
+    }
+
+    // =========================================================================
     // ADMIN — all reservations
+
     // =========================================================================
     @Transactional(readOnly = true)
-    public List<AdminReservationResponse> getAllReservations() {
-        return reservationRepository.findAll().stream()
-                .map(this::toAdminReservationResponse)
-                .collect(Collectors.toList());
+    public Page<AdminReservationResponse> getAllReservations(Pageable pageable) {
+        return reservationRepository.findAll(pageable)
+                .map(this::toAdminReservationResponse);
     }
 
     @Transactional(readOnly = true)
@@ -364,6 +468,7 @@ public class FlightReservationService {
                 .price(t.getPrice())
                 .passportNumber(t.getPassportNumber())
                 .dateOfBirth(t.getDateOfBirth())
+                .status(t.getStatus() != null ? t.getStatus().name() : null)
                 .build();
     }
 

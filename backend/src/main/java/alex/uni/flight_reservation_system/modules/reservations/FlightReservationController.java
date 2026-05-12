@@ -38,9 +38,12 @@ public class FlightReservationController {
     // GET /api/user/reservations — my booking history
     // -------------------------------------------------------------------------
     @GetMapping("/api/user/reservations")
-    public ResponseEntity<?> getMyReservations() {
+    public ResponseEntity<?> getMyReservations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         try {
-            List<ReservationResponse> reservations = reservationService.getMyReservations();
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+            org.springframework.data.domain.Page<ReservationResponse> reservations = reservationService.getMyReservations(pageable);
             return ResponseEntity.ok(reservations);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

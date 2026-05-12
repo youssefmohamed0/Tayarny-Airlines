@@ -105,6 +105,52 @@ curl -s -X PUT "$BASE/api/admin/reservations/$SECOND_RES_ID/cancel" \
   -H "Authorization: Bearer $ADMIN_TOKEN" | python3 -m json.tool
 
 echo ""
+echo "=== 9.6 User: Book 2 tickets again (for single ticket cancellation test) ==="
+REBOOK2_RESPONSE=$(curl -s -X POST "$BASE/api/checkout" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "flightNumber": "MS777",
+    "fareClass": "ECONOMY",
+    "travelers": [
+      {
+        "type": "ADULT",
+        "fullName": "Alice Doe",
+        "passportNumber": "A111",
+        "assignedSeat": "3A"
+      },
+      {
+        "type": "ADULT",
+        "fullName": "Bob Doe",
+        "passportNumber": "B222",
+        "assignedSeat": "3B"
+      }
+    ],
+    "creditCardNumber": "4111111111111111",
+    "cardExpiryDate": "12/2027"
+  }')
+echo "$REBOOK2_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$REBOOK2_RESPONSE"
+THIRD_RES_ID=$(echo "$REBOOK2_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)[\"id\"])" 2>/dev/null)
+
+echo ""
+echo "=== 9.7 Get tickets for third reservation ==="
+TICKETS_RESPONSE=$(curl -s -X GET "$BASE/api/user/reservations/$THIRD_RES_ID/tickets" \
+  -H "Authorization: Bearer $TOKEN")
+echo "$TICKETS_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$TICKETS_RESPONSE"
+TICKET_1_ID=$(echo "$TICKETS_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)[0][\"id\"])" 2>/dev/null)
+TICKET_2_ID=$(echo "$TICKETS_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)[1][\"id\"])" 2>/dev/null)
+
+echo ""
+echo "=== 9.8 User cancels first ticket ==="
+curl -s -X PUT "$BASE/api/user/tickets/$TICKET_1_ID/cancel" \
+  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+
+echo ""
+echo "=== 9.9 Admin cancels second ticket ==="
+curl -s -X PUT "$BASE/api/admin/tickets/$TICKET_2_ID/cancel" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | python3 -m json.tool
+
+echo ""
 echo "=== 10. Try expired card (should fail) ==="
 curl -s -X POST "$BASE/api/checkout" \
   -H "Content-Type: application/json" \
