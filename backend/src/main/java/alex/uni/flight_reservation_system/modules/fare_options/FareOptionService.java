@@ -39,6 +39,11 @@ public class FareOptionService {
 
     // ADMIN FUNCTIONS (Used when scheduling new flights)
 
+    public FareOption getFareById(UUID fareId) {
+        return fareOptionRepository.findById(fareId)
+                .orElseThrow(() -> new RuntimeException("Fare option not found with ID: " + fareId));
+    }
+
     public FareOption addFareOption(FareOption fareOption) {
         return fareOptionRepository.save(fareOption);
     }
