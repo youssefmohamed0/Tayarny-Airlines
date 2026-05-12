@@ -46,7 +46,9 @@ export default function AdminPage() {
   }
 
   async function handleDeleteUser(userId: string, role: string) {
-    if (role === 'ADMIN') return
+    // Safety check remains: even though button is visible, action is blocked for Admins
+    if (role === 'ADMIN') return 
+    
     if (!confirm('Are you sure you want to delete this user?')) return
     const ok = await apiService.deleteUser(userId)
     if (ok) {
@@ -106,9 +108,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* main grid */}
         <div style={{ display: 'flex', gap: 20 }}>
-
           {/* left — admin badge */}
           <div style={{
             width: 200, flexShrink: 0, background: 'linear-gradient(135deg, #1a1a2e, #378ADD)',
@@ -161,7 +161,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* ── Modals ── */}
+      {/* Modals */}
 
       {/* Add/Edit Flight Modal */}
       {(modal === 'add' || modal === 'edit') && (
@@ -212,16 +212,14 @@ export default function AdminPage() {
                 flex: 1, padding: '12px', borderRadius: 10, border: 'none',
                 background: '#1a1a2e', color: 'white', cursor: 'pointer',
                 fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
-              }}>
-                {modal === 'add' ? 'Add Flight' : 'Save Changes'}
-              </button>
+              }}>{modal === 'add' ? 'Add Flight' : 'Save Changes'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Search by Booking ID */}
-      {modal === 'bookingId' && (
+      {/* Booking Search Modals (ID and User) */}
+      {(modal === 'bookingId' || modal === 'bookingUser') && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
@@ -229,10 +227,15 @@ export default function AdminPage() {
           <div style={{
             background: 'white', borderRadius: 16, padding: '2rem', width: 420,
           }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 16px' }}>🔍 Search by Booking ID</h3>
-            <input placeholder="Enter booking ID..." value={searchBookingId}
-              onChange={e => setSearchBookingId(e.target.value)}
-              style={{ ...inputStyle, marginBottom: 12 }} />
+            <h3 style={{ margin: '0 0 16px' }}>
+              {modal === 'bookingId' ? '🔍 Search by Booking ID' : '👤 Search by User'}
+            </h3>
+            <input 
+              placeholder={modal === 'bookingId' ? "Enter booking ID..." : "Enter username..."} 
+              value={modal === 'bookingId' ? searchBookingId : searchUser}
+              onChange={e => modal === 'bookingId' ? setSearchBookingId(e.target.value) : setSearchUser(e.target.value)}
+              style={{ ...inputStyle, marginBottom: 12 }} 
+            />
             <button style={{
               width: '100%', padding: '12px', background: '#378ADD', color: 'white',
               border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
@@ -242,29 +245,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Search by User */}
-      {modal === 'bookingUser' && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-        }} onClick={() => setModal('none')}>
-          <div style={{
-            background: 'white', borderRadius: 16, padding: '2rem', width: 420,
-          }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 16px' }}>👤 Search by User</h3>
-            <input placeholder="Enter username..." value={searchUser}
-              onChange={e => setSearchUser(e.target.value)}
-              style={{ ...inputStyle, marginBottom: 12 }} />
-            <button style={{
-              width: '100%', padding: '12px', background: '#378ADD', color: 'white',
-              border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 14, fontWeight: 600,
-            }}>Search</button>
-          </div>
-        </div>
-      )}
-
-      {/* View All Users */}
+      {/* View All Users Modal */}
       {modal === 'users' && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
@@ -295,31 +276,23 @@ export default function AdminPage() {
                       </p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{
-                        fontSize: 11, padding: '4px 10px', borderRadius: 20,
-                        background: user.role === 'ADMIN' ? '#fff0f0' : '#f0f4ff',
-                        color: user.role === 'ADMIN' ? '#e74c3c' : '#378ADD',
-                        fontWeight: 600,
-                      }}>{user.role}</span>
+                  <span style={{
+                    fontSize: 11, padding: '4px 10px', borderRadius: 20,
+                    background: user.role === 'ADMIN' ? '#fff0f0' : '#f0f4ff',
+                    color: user.role === 'ADMIN' ? '#e74c3c' : '#378ADD',
+                    fontWeight: 600,
+                  }}>{user.role}</span>
 
-                      {/* only show delete for CUSTOMER */}
-                      {user.role === 'CUSTOMER' ? (
-                        <button onClick={() => handleDeleteUser(user.id, user.role)} style={{
-                          padding: '6px 12px', background: '#fff0f0', color: '#e74c3c',
-                          border: '1px solid rgba(231,76,60,0.3)', borderRadius: 8,
-                          cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
-                        }}>
-                          🗑️ Delete
-                        </button>
-                      ) : (
-                        <span style={{
-                          padding: '6px 12px', fontSize: 12, color: '#ccc',
-                          border: '1px solid #eee', borderRadius: 8,
-                        }}>
-                          🔒 Protected
-                        </span>
-                      )}
-                    </div>
+                  {user.role === 'CUSTOMER' && (
+                    <button onClick={() => handleDeleteUser(user.id, user.role)} style={{
+                      padding: '6px 12px', background: '#fff0f0', color: '#e74c3c',
+                      border: '1px solid rgba(231,76,60,0.3)', borderRadius: 8,
+                      cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
+                    }}>
+                      Delete
+                    </button>
+                  )}
+                </div>
                   </div>
                 ))}
               </div>
