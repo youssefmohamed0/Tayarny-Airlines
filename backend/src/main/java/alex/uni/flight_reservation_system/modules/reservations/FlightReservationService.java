@@ -228,6 +228,37 @@ public class FlightReservationService {
                     + "Flight departs at " + departureTime);
         }
 
+        return processCancellation(reservation, flight);
+    }
+
+    // =========================================================================
+    // ADMIN — cancel reservation
+    // =========================================================================
+    @Transactional
+    public AdminReservationResponse adminCancelReservation(UUID reservationId) {
+        FlightReservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            throw new RuntimeException("Reservation is already cancelled");
+        }
+
+        Flight flight = reservation.getFareOption().getFlight();
+        LocalDateTime departureTime = flight.getDepartureTime();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Admins can cancel up to the time of departure (bypassing the 24-hour rule).
+        // If you want admins to cancel even AFTER departure (e.g. for refunds/mistakes),
+        // you can remove this check entirely.
+        if (departureTime.isBefore(now)) {
+            throw new RuntimeException("Cannot cancel a reservation for a flight that has already departed");
+        }
+
+        processCancellation(reservation, flight);
+        return toAdminReservationResponse(reservation);
+    }
+
+    private ReservationResponse processCancellation(FlightReservation reservation, Flight flight) {
         // 1. Mark seats as AVAILABLE
         List<UUID> seatIds = reservation.getTickets().stream()
                 .map(t -> t.getSeat().getId())

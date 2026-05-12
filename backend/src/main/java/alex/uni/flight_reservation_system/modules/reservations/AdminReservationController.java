@@ -35,4 +35,14 @@ public class AdminReservationController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelReservation(@PathVariable UUID id) {
+        try {
+            AdminReservationResponse reservation = reservationService.adminCancelReservation(id);
+            return ResponseEntity.ok(reservation);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

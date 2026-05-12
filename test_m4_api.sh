@@ -78,7 +78,7 @@ curl -s -X GET "$BASE/api/user/reservations/$NEW_RES_ID" \
 
 echo ""
 echo "=== 9. Try booking same seats again (should work since we cancelled) ==="
-curl -s -X POST "$BASE/api/checkout" \
+REBOOK_RESPONSE=$(curl -s -X POST "$BASE/api/checkout" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -94,7 +94,15 @@ curl -s -X POST "$BASE/api/checkout" \
     ],
     "creditCardNumber": "4111111111111111",
     "cardExpiryDate": "12/2027"
-  }' | python3 -m json.tool
+  }')
+echo "$REBOOK_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$REBOOK_RESPONSE"
+SECOND_RES_ID=$(echo "$REBOOK_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null)
+echo "Second reservation ID: $SECOND_RES_ID"
+
+echo ""
+echo "=== 9.5 Admin: Cancel the second reservation ==="
+curl -s -X PUT "$BASE/api/admin/reservations/$SECOND_RES_ID/cancel" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | python3 -m json.tool
 
 echo ""
 echo "=== 10. Try expired card (should fail) ==="
