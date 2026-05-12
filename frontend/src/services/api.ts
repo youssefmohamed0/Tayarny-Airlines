@@ -54,6 +54,20 @@ class ApiService {
       body: JSON.stringify({ refreshToken }),
     }).then(res => res.json())
   }
+  async getUsers() {
+  const headers = await this.#getHeaders()
+  return await fetch(this.#baseUrl + '/api/admin/users', {
+    headers,
+  }).then(res => res.json())
+}
+
+async deleteUser(userId: string) {
+  const headers = await this.#getHeaders()
+  return await fetch(this.#baseUrl + '/api/admin/users/' + userId, {
+    method: 'DELETE',
+    headers,
+  }).then(res => res.ok)
+}
 
   // ── User Profile ────────────────────────────────────
 
