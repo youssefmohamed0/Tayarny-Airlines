@@ -26,7 +26,7 @@ public class UserFlightController {
     // ==========================================
     // 1. SEARCH FLIGHTS
     // GET /api/flights?origin=CAI&destination=LHR&departureDate=2026-10-30
-    //     &returnDate=2026-11-25&travelers.adults=2&travelers.children=3&cabinClass=ECONOMY
+    // &returnDate=2026-11-25&travelers.adults=2&travelers.children=3&cabinClass=ECONOMY
     //
     // Uses @ModelAttribute to bind flattened query parameters to a nested DTO.
     // This avoids the REST anti-pattern of sending a JSON body on a GET request.
