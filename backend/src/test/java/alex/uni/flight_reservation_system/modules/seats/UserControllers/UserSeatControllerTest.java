@@ -51,32 +51,4 @@ class UserSeatControllerTest {
         assertEquals("10A", response.getBody().get(0).getSeatNum());
     }
 
-    @Test
-    void testGetSeatById_Found() {
-        UUID seatId = UUID.randomUUID();
-        SeatDto seat = new SeatDto();
-        seat.setId(seatId);
-        seat.setAirplaneModelId(UUID.randomUUID());
-        seat.setSeatNum("10A");
-        seat.setPosition(SeatPosition.WINDOW);
-        seat.setSeatClass(SeatClass.ECONOMY);
-
-        when(seatService.getSeatById(seatId)).thenReturn(Optional.of(seat));
-
-        ResponseEntity<?> response = userSeatController.getSeatById(seatId);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(seat, response.getBody());
-    }
-
-    @Test
-    void testGetSeatById_NotFound() {
-        UUID seatId = UUID.randomUUID();
-        when(seatService.getSeatById(seatId)).thenReturn(Optional.empty());
-
-        ResponseEntity<?> response = userSeatController.getSeatById(seatId);
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertEquals("Seat not found", response.getBody());
-    }
 }

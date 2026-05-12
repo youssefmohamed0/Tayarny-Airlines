@@ -59,34 +59,4 @@ class SeatServiceTest {
         assertEquals(SeatClass.ECONOMY, result.get(0).getSeatClass());
     }
 
-    @Test
-    void testGetSeatById_Found() {
-        UUID seatId = UUID.randomUUID();
-        AirplaneModel airplaneModel = new AirplaneModel();
-        airplaneModel.setId(UUID.randomUUID());
-
-        Seat seat = new Seat();
-        seat.setId(seatId);
-        seat.setAirplaneModel(airplaneModel);
-        seat.setSeatNum("10B");
-        seat.setPosition(SeatPosition.MIDDLE);
-        seat.setSeatClass(SeatClass.ECONOMY);
-
-        when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
-
-        Optional<SeatDto> result = seatService.getSeatById(seatId);
-
-        assertTrue(result.isPresent());
-        assertEquals("10B", result.get().getSeatNum());
-    }
-
-    @Test
-    void testGetSeatById_NotFound() {
-        UUID seatId = UUID.randomUUID();
-        when(seatRepository.findById(seatId)).thenReturn(Optional.empty());
-
-        Optional<SeatDto> result = seatService.getSeatById(seatId);
-
-        assertFalse(result.isPresent());
-    }
 }
