@@ -141,6 +141,7 @@ public class FlightReservationService {
             ticket.setSeat(seatMap.get(traveler.getAssignedSeat()));
             ticket.setPassengerName(traveler.getFullName());
             ticket.setPassengerType(PassengerType.valueOf(traveler.getType().toUpperCase()));
+            ticket.setStatus(ReservationStatus.CONFIRMED);
             ticket.setPrice("ADULT".equalsIgnoreCase(traveler.getType())
                     ? fareOption.getPricePerAdult()
                     : fareOption.getPricePerChild());
@@ -277,8 +278,13 @@ public class FlightReservationService {
         fareOption.setAvailableSeats(fareOption.getAvailableSeats() + reservation.getNumSeats());
         fareOptionRepository.save(fareOption);
 
-        // 3. Mark reservation as cancelled
+        // 3. Mark reservation and its tickets as cancelled
         reservation.setStatus(ReservationStatus.CANCELLED);
+        if (reservation.getTickets() != null) {
+            for (Ticket ticket : reservation.getTickets()) {
+                ticket.setStatus(ReservationStatus.CANCELLED);
+            }
+        }
         reservation = reservationRepository.save(reservation);
 
         return toReservationResponse(reservation);
@@ -364,6 +370,7 @@ public class FlightReservationService {
                 .price(t.getPrice())
                 .passportNumber(t.getPassportNumber())
                 .dateOfBirth(t.getDateOfBirth())
+                .status(t.getStatus() != null ? t.getStatus().name() : null)
                 .build();
     }
 

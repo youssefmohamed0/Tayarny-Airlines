@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import alex.uni.flight_reservation_system.modules.reservations.FlightReservation;
 import alex.uni.flight_reservation_system.modules.seats.Seat;
 import alex.uni.flight_reservation_system.common.enums.PassengerType;
+import alex.uni.flight_reservation_system.common.enums.ReservationStatus;
 
 @Entity
 @Table(name = "tickets")
@@ -41,4 +42,8 @@ public class Ticket {
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReservationStatus status;
 }

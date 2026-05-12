@@ -23,4 +23,5 @@ public class TicketResponse {
     private double price;
     private String passportNumber;
     private LocalDate dateOfBirth;
+    private String status;
 }

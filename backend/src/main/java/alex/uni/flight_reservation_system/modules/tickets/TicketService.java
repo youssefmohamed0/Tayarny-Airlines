@@ -48,6 +48,7 @@ public class TicketService {
                 .price(t.getPrice())
                 .passportNumber(t.getPassportNumber())
                 .dateOfBirth(t.getDateOfBirth())
+                .status(t.getStatus() != null ? t.getStatus().name() : null)
                 .build();
     }
 }
