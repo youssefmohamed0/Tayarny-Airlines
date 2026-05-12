@@ -15,6 +15,9 @@ public interface FlightRepository extends JpaRepository<Flight, UUID> {
 
     Optional<Flight> findByFlightNumber(String flightNumber);
 
+    // Derived Query: Finds flights that have arrived but are not in a specific status
+    List<Flight> findByArrivalTimeBeforeAndStatusNot(LocalDateTime currentTime, String status);
+
     // Derived Query: Finds flights between specific airports departing after a certain time
     List<Flight> findByOriginAirportIdAndDestinationAirportIdAndDepartureTimeAfter(
             UUID originId, UUID destinationId, LocalDateTime currentTime);
