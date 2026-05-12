@@ -6,6 +6,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import alex.uni.flight_reservation_system.common.enums.FlightStatus;
 
 /**
  * Response DTO for admin GET Flight.
@@ -18,6 +19,7 @@ public class AdminFlightResponse {
     private UUID flightId;
     private String flightNumber;
     private String aircraft; // e.g., "Boeing 777-300ER"
+    private FlightStatus status;
 
     private DepartureDto departure;
     private ArrivalDto arrival;
