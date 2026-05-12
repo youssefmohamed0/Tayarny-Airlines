@@ -49,7 +49,7 @@ public class UserFlightController {
     // ==========================================
     @GetMapping
     public ResponseEntity<UserFlightSearchResponse> searchFlights(
-            @ModelAttribute FlightSearchRequest request) {
+            @RequestBody FlightSearchRequest request) {
 
         // Resolve IATA codes to Airport entities
         Airport origin = airportRepository.findByIataCode(request.getOrigin())

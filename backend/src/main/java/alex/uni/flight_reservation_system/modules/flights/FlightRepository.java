@@ -13,7 +13,28 @@ import java.util.UUID;
 @Repository
 public interface FlightRepository extends JpaRepository<Flight, UUID> {
 
-    Optional<Flight> findByFlightNumber(String flightNumber);
+    @Query("SELECT f FROM Flight f " +
+           "JOIN FETCH f.originAirport " +
+           "JOIN FETCH f.destinationAirport " +
+           "JOIN FETCH f.airplane a " +
+           "JOIN FETCH a.model " +
+           "WHERE f.flightNumber = :flightNumber")
+    Optional<Flight> findByFlightNumber(@Param("flightNumber") String flightNumber);
+
+    @Query("SELECT f FROM Flight f " +
+           "JOIN FETCH f.originAirport " +
+           "JOIN FETCH f.destinationAirport " +
+           "JOIN FETCH f.airplane a " +
+           "JOIN FETCH a.model " +
+           "WHERE f.id = :id")
+    Optional<Flight> findByIdWithDetails(@Param("id") UUID id);
+
+    @Query("SELECT f FROM Flight f " +
+           "JOIN FETCH f.originAirport " +
+           "JOIN FETCH f.destinationAirport " +
+           "JOIN FETCH f.airplane a " +
+           "JOIN FETCH a.model")
+    List<Flight> findAllWithDetails();
 
     // Derived Query: Finds flights between specific airports departing after a certain time
     List<Flight> findByOriginAirportIdAndDestinationAirportIdAndDepartureTimeAfter(
@@ -21,7 +42,13 @@ public interface FlightRepository extends JpaRepository<Flight, UUID> {
 
     // Alternatively, for complex queries, you can write your own exact SQL (JPQL)
     // This is great for your search API to ensure the flight has enough available seats!
-    @Query("SELECT DISTINCT f FROM Flight f JOIN FareOption fo ON fo.flight = f WHERE f.originAirport.id = :originId " +
+    @Query("SELECT DISTINCT f FROM Flight f " +
+           "JOIN FETCH f.originAirport " +
+           "JOIN FETCH f.destinationAirport " +
+           "JOIN FETCH f.airplane a " +
+           "JOIN FETCH a.model " +
+           "JOIN FareOption fo ON fo.flight = f " +
+           "WHERE f.originAirport.id = :originId " +
            "AND f.destinationAirport.id = :destId " +
            "AND f.departureTime BETWEEN :startOfDay AND :endOfDay " +
            "AND fo.availableSeats >= :travelersCount")

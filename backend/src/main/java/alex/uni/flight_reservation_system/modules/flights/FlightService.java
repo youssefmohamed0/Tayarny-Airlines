@@ -32,12 +32,12 @@ public class FlightService {
     }
 
     public Flight getFlightById(UUID flightId) {
-        return flightRepository.findById(flightId)
+        return flightRepository.findByIdWithDetails(flightId)
                 .orElseThrow(() -> new RuntimeException("Flight not found with ID: " + flightId));
     }
 
     public List<Flight> getAllFlights() {
-        return flightRepository.findAll();
+        return flightRepository.findAllWithDetails();
     }
 
     // ADMIN FUNCTIONS

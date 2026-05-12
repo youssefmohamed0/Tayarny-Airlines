@@ -80,7 +80,7 @@ public class AdminFlightController {
         // Save nested fare options
         saveFareOptions(request.getFareOptions(), savedFlight);
 
-        return ResponseEntity.ok(mapToAdminResponse(savedFlight));
+        return ResponseEntity.ok(mapToAdminResponse(flightService.getFlightById(savedFlight.getId())));
     }
 
     // ==========================================
@@ -106,7 +106,7 @@ public class AdminFlightController {
         }
         saveFareOptions(request.getFareOptions(), updatedFlight);
 
-        return ResponseEntity.ok(mapToAdminResponse(updatedFlight));
+        return ResponseEntity.ok(mapToAdminResponse(flightService.getFlightById(updatedFlight.getId())));
     }
 
     // ==========================================
