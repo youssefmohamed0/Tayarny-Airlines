@@ -38,4 +38,6 @@ public interface FlightSeatStatusRepository extends JpaRepository<FlightSeatStat
     List<FlightSeatStatus> findByFlightIdAndSeatIdsForUpdate(
             @Param("flightId") UUID flightId,
             @Param("seatIds") List<UUID> seatIds);
+
+    List<FlightSeatStatus> findByFlight_Id(UUID flightId); // why use this not findByFlightId?
 }
