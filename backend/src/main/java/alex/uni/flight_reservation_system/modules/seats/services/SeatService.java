@@ -32,7 +32,7 @@ public class SeatService {
 
     @Transactional(readOnly = true)
     public List<SeatDto> getSeatsByFlight(UUID flightId) {
-        List<FlightSeatStatus> statuses = flightSeatStatusRepository.findByFlight_Id(flightId);
+        List<FlightSeatStatus> statuses = flightSeatStatusRepository.findByFlightId(flightId);
                 
         return statuses.stream().map(status -> {
             SeatDto dto = mapToDto(status.getSeat());
