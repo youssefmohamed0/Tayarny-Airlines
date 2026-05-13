@@ -40,7 +40,17 @@ class AdminReservationControllerTest {
     void testGetAllReservations() {
         when(reservationService.getAllReservations(any())).thenReturn(new PageImpl<>(new ArrayList<>()));
 
-        ResponseEntity<?> response = adminReservationController.getAllReservations(0, 10);
+        ResponseEntity<?> response = adminReservationController.getAllReservations(0, 10, null);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testGetAllReservationsWithUsername() {
+        String username = "testuser";
+        when(reservationService.getReservationsByUsername(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+
+        ResponseEntity<?> response = adminReservationController.getAllReservations(0, 10, username);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }

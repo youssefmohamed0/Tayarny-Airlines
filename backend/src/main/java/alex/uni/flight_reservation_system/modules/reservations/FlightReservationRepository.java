@@ -22,6 +22,9 @@ public interface FlightReservationRepository extends JpaRepository<FlightReserva
     // Navigates fareOption → flight → departureTime to sort newest first
     Page<FlightReservation> findByUserIdOrderByFareOptionFlightDepartureTimeDesc(UUID userId, Pageable pageable);
 
+    // Fetches all reservations for a specific user username, newest first
+    Page<FlightReservation> findByUserUsernameOrderByFareOptionFlightDepartureTimeDesc(String username, Pageable pageable);
+
     // Fetches all reservations for a specific flight
     List<FlightReservation> findByFareOptionFlightId(UUID flightId);
 }

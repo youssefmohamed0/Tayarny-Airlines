@@ -19,7 +19,7 @@ type Flight = {
   fareOptions: FareOption[]
 }
 
-type Modal = 'none' | 'add' | 'edit' | 'users' | 'bookingId' | 'bookingUser'
+type Modal = 'none' | 'add' | 'edit' | 'users'
 
 const emptyFlight: Flight = {
   flightNumber: '',
@@ -35,8 +35,6 @@ export default function AdminPage() {
   const [flights, setFlights] = useState<Flight[]>([])
   const [loadingFlights, setLoadingFlights] = useState(true)
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
-  const [searchBookingId, setSearchBookingId] = useState('')
-  const [searchUser, setSearchUser] = useState('')
   const [searchFlightNumber, setSearchFlightNumber] = useState('')
   const [form, setForm] = useState<Flight>(emptyFlight)
   const [users, setUsers] = useState<any[]>([])
@@ -98,7 +96,7 @@ export default function AdminPage() {
   }
 
   async function handleDeleteFlight(flightId: string) {
-    if (!confirm('Delete this flight?')) return
+    if (!confirm('Are you sure you want to delete this flight route?')) return
     const ok = await apiService.deleteFlight(flightId)
     if (ok) setFlights(prev => prev.filter(f => f.flightId !== flightId))
   }
@@ -123,102 +121,77 @@ export default function AdminPage() {
     if (ok) setUsers(prev => prev.filter(u => u.id !== userId))
   }
 
-  function handleBookingSearch() {
-    if (searchBookingId.trim()) {
-      router.push(`/admin/reservation/${searchBookingId.trim()}`)
-    }
-  }
-
-  function handleUserSearch() {
-    if (searchUser.trim()) {
-      router.push(`/admin/reservations?username=${searchUser.trim()}`)
-    }
-  }
-
-  const inputStyle = {
-    padding: '11px 14px', borderRadius: 8, border: '1.5px solid #e8e8f0',
-    fontSize: 14, width: '100%', outline: 'none', background: 'white',
-    fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'all 0.15s'
-  }
-
   const now = new Date()
 
   return (
     <div className="animate-in">
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#111827', margin: '0 0 4px', letterSpacing: '-0.5px' }}>Admin Dashboard</h1>
-          <p style={{ color: '#6b7280', fontSize: 15, margin: 0 }}>Manage flights, monitor bookings, and oversee users.</p>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#111827', margin: '0 0 6px', letterSpacing: '-0.8px' }}>Admin Dashboard</h1>
+          <p style={{ color: '#6b7280', fontSize: 16, margin: 0 }}>Operational control center for Tayarny-Airlines.</p>
         </div>
-        <div style={{ textAlign: 'right', color: '#4B3BF5', fontSize: 13, fontWeight: 700 }}>
-          {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#4B3BF5' }}>
+            {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </div>
+          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>System Status: Online</div>
         </div>
       </div>
 
       {error && (
-        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#991b1b', fontSize: 14 }}>
+        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 12, padding: '14px 18px', marginBottom: 24, color: '#991b1b', fontSize: 14, fontWeight: 500 }}>
           ⚠️ {error}
         </div>
       )}
 
-      {/* Stats / Quick Actions Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <button onClick={openAdd} className="card-hover" style={{
-          background: '#4B3BF5', color: 'white', border: 'none', borderRadius: 14, padding: '1.5rem',
-          textAlign: 'left', cursor: 'pointer', boxShadow: '0 4px 12px rgba(75,59,245,0.2)'
+      {/* Main Action Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 32 }}>
+        <button onClick={openAdd} className="card card-hover" style={{
+          background: 'linear-gradient(135deg, #4B3BF5 0%, #3a2de0 100%)', color: 'white', border: 'none', padding: '2.5rem 2rem',
+          textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 24, position: 'relative', overflow: 'hidden'
         }}>
-          <div style={{ fontSize: 24, marginBottom: 12 }}>✈️</div>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>Add New Flight</div>
-          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>Create a new scheduled route</div>
+          <div style={{ position: 'absolute', right: -20, bottom: -20, fontSize: 120, opacity: 0.1, transform: 'rotate(-15deg)' }}>✈️</div>
+          <div style={{ background: 'rgba(255,255,255,0.2)', width: 56, height: 56, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>➕</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Add New Flight</div>
+            <div style={{ fontSize: 14, opacity: 0.9 }}>Schedule a new route and aircraft</div>
+          </div>
         </button>
 
-        <button onClick={() => setModal('bookingId')} className="card-hover" style={{
-          background: 'white', border: '1px solid #e8e8f0', borderRadius: 14, padding: '1.5rem',
-          textAlign: 'left', cursor: 'pointer'
+        <button onClick={openUsers} className="card card-hover" style={{
+          background: 'white', padding: '2.5rem 2rem',
+          textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 24
         }}>
-          <div style={{ fontSize: 24, marginBottom: 12, color: '#4B3BF5' }}>🔍</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Find Booking</div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>Search by Reservation ID</div>
-        </button>
-
-        <button onClick={() => setModal('bookingUser')} className="card-hover" style={{
-          background: 'white', border: '1px solid #e8e8f0', borderRadius: 14, padding: '1.5rem',
-          textAlign: 'left', cursor: 'pointer'
-        }}>
-          <div style={{ fontSize: 24, marginBottom: 12, color: '#4B3BF5' }}>👤</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>User History</div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>View bookings by username</div>
-        </button>
-
-        <button onClick={openUsers} className="card-hover" style={{
-          background: 'white', border: '1px solid #e8e8f0', borderRadius: 14, padding: '1.5rem',
-          textAlign: 'left', cursor: 'pointer'
-        }}>
-          <div style={{ fontSize: 24, marginBottom: 12, color: '#4B3BF5' }}>👥</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Manage Users</div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>View and delete accounts</div>
+          <div style={{ background: '#eeeaff', width: 56, height: 56, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#4B3BF5' }}>👥</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 4 }}>Manage Users</div>
+            <div style={{ fontSize: 14, color: '#6b7280' }}>View directory and booking history</div>
+          </div>
         </button>
       </div>
 
       {/* Flight Search & List Section */}
-      <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8e8f0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f4f4fb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>Active Flights</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ background: 'white', borderRadius: 20, border: '1px solid #e8e8f0', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+        <div style={{ padding: '24px', borderBottom: '1px solid #f4f4fb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0 }}>Active Routes</h2>
+          <div style={{ display: 'flex', gap: 10 }}>
             <input 
-              placeholder="Filter by flight number..." 
+              placeholder="Search flight #..." 
               value={searchFlightNumber}
               onChange={e => setSearchFlightNumber(e.target.value)}
-              style={{ ...inputStyle, width: 220, padding: '8px 12px', fontSize: 13 }} 
+              className="input"
+              style={{ width: 200, padding: '9px 12px', fontSize: 13 }} 
             />
             <button 
               onClick={() => loadFlights(searchFlightNumber || undefined)} 
-              style={{ padding: '8px 16px', background: '#4B3BF5', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+              className="btn btn-primary btn-sm"
+              style={{ borderRadius: 8 }}
             >Search</button>
             {searchFlightNumber && (
               <button 
                 onClick={() => { setSearchFlightNumber(''); loadFlights() }} 
-                style={{ padding: '8px 12px', background: '#f3f4f6', color: '#4b5563', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}
+                className="btn btn-ghost btn-sm"
+                style={{ borderRadius: 8, padding: '0 12px' }}
               >✕</button>
             )}
           </div>
@@ -226,27 +199,28 @@ export default function AdminPage() {
 
         <div style={{ padding: '8px 0' }}>
           {loadingFlights ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: '#9ca3af' }}>
-              <p>Loading flight data…</p>
+            <div style={{ textAlign: 'center', padding: '5rem', color: '#9ca3af' }}>
+              <div style={{ marginBottom: 12 }}>⏳</div>
+              <p>Synchronizing flight data…</p>
             </div>
           ) : flights.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: '#9ca3af' }}>
-              <p>No flights found matching your criteria.</p>
+            <div style={{ textAlign: 'center', padding: '5rem', color: '#9ca3af' }}>
+              <p>No flight records found.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {flights.map((flight, i) => (
                 <div key={flight.flightId || i} style={{
-                  padding: '16px 24px', borderBottom: i === flights.length - 1 ? 'none' : '1px solid #f4f4fb',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'background 0.15s'
+                  padding: '20px 24px', borderBottom: i === flights.length - 1 ? 'none' : '1px solid #f4f4fb',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                 }} className="hover-bg">
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-                      <span style={{ fontWeight: 800, fontSize: 15, color: '#111827' }}>{flight.flightNumber}</span>
-                      <span style={{ fontSize: 14, color: '#4b5563', fontWeight: 500 }}>{flight.departure.airport} → {flight.arrival.airport}</span>
-                      <span style={{ fontSize: 11, background: '#eeeaff', color: '#4B3BF5', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{flight.aircraft}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                      <span style={{ fontWeight: 800, fontSize: 17, color: '#111827' }}>{flight.flightNumber}</span>
+                      <span style={{ fontSize: 15, color: '#4b5563', fontWeight: 500 }}>{flight.departure.airport} → {flight.arrival.airport}</span>
+                      <span className="badge badge-primary">{flight.aircraft}</span>
                     </div>
-                    <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#6b7280' }}>
+                    <div style={{ display: 'flex', gap: 20, fontSize: 13, color: '#6b7280' }}>
                       <span>🕒 Dep: {new Date(flight.departure.time).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                       <span>📍 Terminal {flight.departure.terminal}</span>
                       <span style={{ color: '#10b981', fontWeight: 600 }}>
@@ -254,20 +228,9 @@ export default function AdminPage() {
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => openEdit(flight)} style={{
-                      padding: '8px 16px', background: 'white', color: '#4b5563',
-                      border: '1.5px solid #e8e8f0', borderRadius: 8, cursor: 'pointer', fontSize: 13,
-                      fontWeight: 600, transition: 'all 0.15s'
-                    }} onMouseEnter={e => e.currentTarget.style.borderColor = '#4B3BF5'} onMouseLeave={e => e.currentTarget.style.borderColor = '#e8e8f0'}>
-                      Edit
-                    </button>
-                    <button onClick={() => flight.flightId && handleDeleteFlight(flight.flightId)} style={{
-                      padding: '8px 12px', background: 'white', color: '#ef4444',
-                      border: '1.5px solid #fee2e2', borderRadius: 8, cursor: 'pointer', fontSize: 13
-                    }} onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'} onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-                      🗑️
-                    </button>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={() => openEdit(flight)} className="btn btn-outline btn-sm">Edit</button>
+                    <button onClick={() => flight.flightId && handleDeleteFlight(flight.flightId)} className="btn btn-ghost btn-sm" style={{ color: '#ef4444', borderColor: '#fee2e2' }}>🗑️</button>
                   </div>
                 </div>
               ))}
@@ -279,64 +242,64 @@ export default function AdminPage() {
       {/* Add/Edit Modal */}
       {(modal === 'add' || modal === 'edit') && (
         <div className="modal-overlay" onClick={() => setModal('none')}>
-          <div className="modal-content animate-in" style={{ width: 640 }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#111827' }}>
-                {modal === 'add' ? 'Create New Flight' : `Edit Flight ${form.flightNumber}`}
+          <div className="modal-content animate-in" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+              <h3 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#111827' }}>
+                {modal === 'add' ? 'Create New Flight' : `Modify Flight ${form.flightNumber}`}
               </h3>
-              <button onClick={() => setModal('none')} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#9ca3af' }}>×</button>
+              <button onClick={() => setModal('none')} style={{ background: 'none', border: 'none', fontSize: 28, cursor: 'pointer', color: '#9ca3af' }}>×</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 28 }}>
               {[
                 { label: 'Flight Number', val: form.flightNumber, placeholder: 'e.g. TA102', onChange: (v: string) => setForm({ ...form, flightNumber: v }) },
-                { label: 'Aircraft Type', val: form.aircraft, placeholder: 'e.g. Boeing 787', onChange: (v: string) => setForm({ ...form, aircraft: v }) },
+                { label: 'Aircraft Type', val: form.aircraft, placeholder: 'e.g. Airbus A350', onChange: (v: string) => setForm({ ...form, aircraft: v }) },
                 { label: 'Origin Airport', val: form.departure.airport, placeholder: 'e.g. CAI', onChange: (v: string) => setForm({ ...form, departure: { ...form.departure, airport: v } }) },
-                { label: 'Departure Terminal', val: form.departure.terminal, placeholder: 'e.g. 3', onChange: (v: string) => setForm({ ...form, departure: { ...form.departure, terminal: v } }) },
+                { label: 'Departure Terminal', val: form.departure.terminal, placeholder: 'e.g. 2', onChange: (v: string) => setForm({ ...form, departure: { ...form.departure, terminal: v } }) },
                 { label: 'Departure Time', val: form.departure.time, type: 'datetime-local', onChange: (v: string) => setForm({ ...form, departure: { ...form.departure, time: v } }) },
-                { label: 'Destination Airport', val: form.arrival.airport, placeholder: 'e.g. LHR', onChange: (v: string) => setForm({ ...form, arrival: { ...form.arrival, airport: v } }) },
+                { label: 'Destination Airport', val: form.arrival.airport, placeholder: 'e.g. DXB', onChange: (v: string) => setForm({ ...form, arrival: { ...form.arrival, airport: v } }) },
                 { label: 'Arrival Time', val: form.arrival.time, type: 'datetime-local', onChange: (v: string) => setForm({ ...form, arrival: { ...form.arrival, time: v } }) },
               ].map((field, idx) => (
-                <div key={idx} style={{ gridColumn: idx === 0 ? 'span 1' : '' }}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6, display: 'block' }}>{field.label}</label>
+                <div key={idx}>
+                  <label className="field-label">{field.label}</label>
                   <input type={(field as any).type || 'text'} value={field.val} placeholder={(field as any).placeholder}
                     onChange={e => field.onChange(e.target.value)} className="input" />
                 </div>
               ))}
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <p style={{ fontSize: 13, fontWeight: 800, color: '#111827', margin: 0 }}>FARE OPTIONS</p>
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p style={{ fontSize: 13, fontWeight: 800, color: '#111827', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fare Inventory</p>
                 <button onClick={() => setForm({ ...form, fareOptions: [...form.fareOptions, { fareName: '', pricePerSeat: 0, benefits: [], availableSeats: 0 }] })}
-                  style={{ fontSize: 12, color: '#4B3BF5', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
-                  + Add Option
+                  className="link" style={{ fontWeight: 700, fontSize: 13 }}>
+                  + Add Fare Class
                 </button>
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {form.fareOptions.map((fare, i) => (
-                  <div key={i} style={{ padding: 16, borderRadius: 12, border: '1px solid #e8e8f0', background: '#fafafa', position: 'relative' }}>
+                  <div key={i} style={{ padding: 20, borderRadius: 12, border: '1px solid #e8e8f0', background: '#f9fafb', position: 'relative' }}>
                     {form.fareOptions.length > 1 && (
                       <button onClick={() => { const u = [...form.fareOptions]; u.splice(i, 1); setForm({ ...form, fareOptions: u }) }}
-                        style={{ position: 'absolute', top: 12, right: 12, border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 18 }}>×</button>
+                        style={{ position: 'absolute', top: 16, right: 16, border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 20 }}>×</button>
                     )}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
                       <div>
-                        <label style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4, display: 'block' }}>Class Name</label>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', marginBottom: 5, display: 'block' }}>Class Name</label>
                         <input value={fare.fareName} onChange={e => { const u = [...form.fareOptions]; u[i].fareName = e.target.value; setForm({ ...form, fareOptions: u }) }} className="input" style={{ background: 'white' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4, display: 'block' }}>Price ($)</label>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', marginBottom: 5, display: 'block' }}>Price ($)</label>
                         <input type="number" value={fare.pricePerSeat} onChange={e => { const u = [...form.fareOptions]; u[i].pricePerSeat = Number(e.target.value); setForm({ ...form, fareOptions: u }) }} className="input" style={{ background: 'white' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4, display: 'block' }}>Seats</label>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', marginBottom: 5, display: 'block' }}>Available Seats</label>
                         <input type="number" value={fare.availableSeats} onChange={e => { const u = [...form.fareOptions]; u[i].availableSeats = Number(e.target.value); setForm({ ...form, fareOptions: u }) }} className="input" style={{ background: 'white' }} />
                       </div>
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4, display: 'block' }}>Benefits (comma separated)</label>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', marginBottom: 5, display: 'block' }}>Benefits (comma separated)</label>
                       <input value={fare.benefits.join(', ')} onChange={e => { const u = [...form.fareOptions]; u[i].benefits = e.target.value.split(',').map(b => b.trim()); setForm({ ...form, fareOptions: u }) }} className="input" style={{ background: 'white' }} />
                     </div>
                   </div>
@@ -344,37 +307,12 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
-              <button onClick={() => setModal('none')} style={{ flex: 1, padding: '12px', borderRadius: 10, border: '1.5px solid #e8e8f0', background: 'white', color: '#4b5563', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleSaveFlight} disabled={saving} style={{ flex: 2, padding: '12px', borderRadius: 10, border: 'none', background: '#4B3BF5', color: 'white', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(75,59,245,0.3)' }}>
-                {saving ? 'Processing...' : modal === 'add' ? 'Create Flight Route' : 'Update Flight Details'}
+            <div style={{ display: 'flex', gap: 14 }}>
+              <button onClick={() => setModal('none')} className="btn btn-outline" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={handleSaveFlight} disabled={saving} className="btn btn-primary" style={{ flex: 2 }}>
+                {saving ? 'Processing...' : modal === 'add' ? 'Confirm & Create Flight' : 'Save Route Changes'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Search Modals (ID / User) */}
-      {(modal === 'bookingId' || modal === 'bookingUser') && (
-        <div className="modal-overlay" onClick={() => setModal('none')}>
-          <div className="modal-content animate-in" style={{ width: 400, padding: '2rem' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 12px', fontSize: 20, fontWeight: 800 }}>
-              {modal === 'bookingId' ? 'Find by Booking ID' : 'Find by Username'}
-            </h3>
-            <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
-              {modal === 'bookingId' ? 'Enter the full UUID of the reservation.' : 'Enter a customer username to see their history.'}
-            </p>
-            <input 
-              placeholder={modal === 'bookingId' ? "e.g. 550e8400-e29b..." : "e.g. johndoe"}
-              value={modal === 'bookingId' ? searchBookingId : searchUser}
-              onChange={e => modal === 'bookingId' ? setSearchBookingId(e.target.value) : setSearchUser(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (modal === 'bookingId' ? handleBookingSearch() : handleUserSearch())}
-              className="input" style={{ marginBottom: 20 }}
-            />
-            <button onClick={modal === 'bookingId' ? handleBookingSearch : handleUserSearch} style={{
-              width: '100%', padding: '13px', background: '#4B3BF5', color: 'white',
-              border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 15, fontWeight: 700,
-            }}>Search Records →</button>
           </div>
         </div>
       )}
@@ -382,41 +320,39 @@ export default function AdminPage() {
       {/* View All Users Modal */}
       {modal === 'users' && (
         <div className="modal-overlay" onClick={() => setModal('none')}>
-          <div className="modal-content animate-in" style={{ width: 680, maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: '1.5rem', borderBottom: '1px solid #f4f4fb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Registered Users</h3>
-              <button onClick={() => setModal('none')} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: '#9ca3af' }}>×</button>
+          <div className="modal-content animate-in" style={{ maxWidth: 720, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '0 0 20px', borderBottom: '1px solid #f4f4fb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>User Directory</h3>
+              <button onClick={() => setModal('none')} style={{ background: 'none', border: 'none', fontSize: 28, cursor: 'pointer', color: '#9ca3af' }}>×</button>
             </div>
             
-            <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
+            <div style={{ padding: '24px 0', overflowY: 'auto', flex: 1 }}>
               {loadingUsers ? (
-                <p style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>Loading user directory…</p>
+                <div style={{ textAlign: 'center', color: '#9ca3af', padding: '3rem' }}>Loading directory…</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {users.map(user => (
                     <div key={user.id} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '16px', border: '1px solid #e8e8f0', borderRadius: 12, background: 'white'
+                      padding: '18px 20px', border: '1px solid #e8e8f0', borderRadius: 16, background: 'white'
                     }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontWeight: 700, color: '#111827' }}>{user.fullName}</span>
-                          <span style={{ fontSize: 11, background: user.role === 'ADMIN' ? '#111827' : '#eeeaff', color: user.role === 'ADMIN' ? 'white' : '#4B3BF5', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{user.role}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                          <span style={{ fontWeight: 800, color: '#111827', fontSize: 16 }}>{user.fullName}</span>
+                          <span className={`badge ${user.role === 'ADMIN' ? 'badge-danger' : 'badge-primary'}`} style={{ fontSize: 10 }}>{user.role}</span>
                         </div>
-                        <div style={{ fontSize: 12, color: '#6b7280' }}>
-                          @{user.username} • {user.email} • ✈️ {user.totalFlights} flights
+                        <div style={{ fontSize: 13, color: '#6b7280' }}>
+                          @{user.username} • {user.email} • <strong style={{ color: '#4B3BF5' }}>{user.totalFlights}</strong> total flights
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => { setModal('none'); router.push(`/admin/reservations?username=${user.username}`) }} style={{
-                          padding: '6px 12px', background: '#f3f4f6', color: '#4b5563',
-                          border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600
-                        }}>Bookings</button>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button onClick={() => { setModal('none'); router.push(`/admin/reservations?username=${user.username}`) }} className="btn btn-outline btn-sm">
+                          View Bookings
+                        </button>
                         {user.role === 'CUSTOMER' && (
-                          <button onClick={() => handleDeleteUser(user.id, user.role)} style={{
-                            padding: '6px 10px', background: 'white', color: '#ef4444',
-                            border: '1px solid #fee2e2', borderRadius: 8, cursor: 'pointer', fontSize: 12
-                          }}>🗑️</button>
+                          <button onClick={() => handleDeleteUser(user.id, user.role)} className="btn btn-ghost btn-sm" style={{ color: '#ef4444', borderColor: '#fee2e2' }}>
+                            Delete
+                          </button>
                         )}
                       </div>
                     </div>
