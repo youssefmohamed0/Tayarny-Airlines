@@ -70,18 +70,20 @@ public class FlightReservationService {
         validateCardExpiry(request.getCardExpiryDate());
 
         // 2. Resolve flight
-        Flight flight = flightRepository.findByFlightNumber(request.getFlightNumber())
-                .orElseThrow(() -> new RuntimeException("Flight not found: " + request.getFlightNumber()));
+        String flightNumber = request.getFlightNumber().trim().toUpperCase();
+        Flight flight = flightRepository.findByFlightNumber(flightNumber)
+                .orElseThrow(() -> new RuntimeException("Flight not found: " + flightNumber));
 
         if (flight.getStatus() != alex.uni.flight_reservation_system.common.enums.FlightStatus.SCHEDULED) {
             throw new RuntimeException("Cannot book tickets for a flight that is " + flight.getStatus());
         }
 
         // 3. Resolve fare option
+        String fareClass = request.getFareClass().trim().toUpperCase();
         FareOption fareOption = fareOptionRepository
-                .findByFlightIdAndCabinClass(flight.getId(), request.getFareClass())
+                .findByFlightIdAndCabinClass(flight.getId(), fareClass)
                 .orElseThrow(() -> new RuntimeException(
-                        "Fare class " + request.getFareClass() + " not found for flight " + request.getFlightNumber()));
+                        "Fare class " + fareClass + " not found for flight " + flightNumber));
 
         // 4. Check enough seats available
         List<TravelerInfo> travelers = request.getTravelers();
@@ -90,9 +92,9 @@ public class FlightReservationService {
                     + ", Available: " + fareOption.getAvailableSeats());
         }
 
-        // 5. Resolve seat names → Seat entities
+        // 5. Resolve seat names → Seat entities (trim + uppercase for consistent lookup)
         List<String> seatNames = travelers.stream()
-                .map(TravelerInfo::getAssignedSeat)
+                .map(t -> t.getAssignedSeat().trim().toUpperCase())
                 .collect(Collectors.toList());
         UUID modelId = flight.getAirplane().getModel().getId();
         List<Seat> seats = seatRepository.findByAirplaneModelIdAndSeatNumIn(modelId, seatNames);
@@ -146,12 +148,14 @@ public class FlightReservationService {
         List<Ticket> tickets = new ArrayList<>();
         for (TravelerInfo traveler : travelers) {
             Ticket ticket = new Ticket();
+            String travelerType = traveler.getType().trim().toUpperCase();
+            String assignedSeat = traveler.getAssignedSeat().trim().toUpperCase();
             ticket.setReservation(reservation);
-            ticket.setSeat(seatMap.get(traveler.getAssignedSeat()));
-            ticket.setPassengerName(traveler.getFullName());
-            ticket.setPassengerType(PassengerType.valueOf(traveler.getType().toUpperCase()));
+            ticket.setSeat(seatMap.get(assignedSeat));
+            ticket.setPassengerName(traveler.getFullName().trim());
+            ticket.setPassengerType(PassengerType.valueOf(travelerType));
             ticket.setStatus(ReservationStatus.CONFIRMED);
-            ticket.setPrice("ADULT".equalsIgnoreCase(traveler.getType())
+            ticket.setPrice("ADULT".equals(travelerType)
                     ? fareOption.getPricePerAdult()
                     : fareOption.getPricePerChild());
             ticket.setPassportNumber(traveler.getPassportNumber());

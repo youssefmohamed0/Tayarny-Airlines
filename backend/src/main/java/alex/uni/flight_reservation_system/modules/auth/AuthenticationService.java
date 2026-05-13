@@ -32,17 +32,21 @@ public class AuthenticationService {
     RefreshTokenService refreshTokenService;
 
     public AuthenticationResponse signup(SignupRequest signupRequest) {
-        if (userRepository.existsByUsername(signupRequest.getUsername())) {
+        String username = signupRequest.getUsername() != null ? signupRequest.getUsername().trim() : null;
+        String email = signupRequest.getEmail() != null ? signupRequest.getEmail().trim() : null;
+        String fullName = signupRequest.getFullName() != null ? signupRequest.getFullName().trim() : null;
+
+        if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("Username Already exists"); // TODO: custom UserAlreadyExists exception
         }
-        if (userRepository.existsByEmail(signupRequest.getEmail())) {
+        if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("Email Already exists"); // TODO: custom EmailAlreadyExists exception
         }
         User newUser = User.builder()
-                .username(signupRequest.getUsername())
+                .username(username)
                 .password(passwordEncoder.encode(signupRequest.getPassword()))
-                .fullName(signupRequest.getFullName())
-                .email(signupRequest.getEmail())
+                .fullName(fullName)
+                .email(email)
                 .role(Role.CUSTOMER)
                 .build();
         userRepository.save(newUser);
@@ -67,14 +71,15 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse login(LoginRequest loginRequest) {
+        String username = loginRequest.getUsername() != null ? loginRequest.getUsername().trim() : null;
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                loginRequest.getUsername(),
+                username,
                 loginRequest.getPassword()));
 
         // UserDetails userDetails =
-        // userDetailsService.loadUserByUsername(loginRequest.getUsername()); // this is
+        // userDetailsService.loadUserByUsername(username); // this is
         // an extra DB hit
-        User loadedUser = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
+        User loadedUser = userRepository.findByUsername(username).orElse(null);
         UserDetails userDetails = userDetailsService.UsertToUserDetail(loadedUser); // this saves us from an extra DB
                                                                                     // hit
         String jwt = jwtService.generateToken(userDetails);

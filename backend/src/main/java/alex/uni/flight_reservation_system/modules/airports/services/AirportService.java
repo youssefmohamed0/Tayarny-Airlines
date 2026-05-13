@@ -55,20 +55,20 @@ public class AirportService {
     }
 
     public Optional<AirportDto> getByIataCode(String iataCode) {
-        return airportRepository.findByIataCode(iataCode.toUpperCase()).map(AirportDto::from);
+        return airportRepository.findByIataCode(iataCode.trim().toUpperCase()).map(AirportDto::from);
     }
 
     @Transactional
     public AirportDto create(CreateAirportRequest request) {
-        String iata = request.iataCode().toUpperCase();
+        String iata = request.iataCode().trim().toUpperCase();
         if (airportRepository.existsByIataCode(iata)) {
             throw new IllegalArgumentException("Airport with IATA code '" + iata + "' already exists");
         }
 
         Airport airport = new Airport();
-        airport.setName(request.name());
-        airport.setCity(request.city());
-        airport.setCountry(request.country());
+        airport.setName(request.name().trim());
+        airport.setCity(request.city().trim());
+        airport.setCountry(request.country().trim());
         airport.setIataCode(iata);
 
         return AirportDto.from(airportRepository.save(airport));
@@ -77,11 +77,11 @@ public class AirportService {
     @Transactional
     public Optional<AirportDto> update(UUID id, UpdateAirportRequest request) {
         return airportRepository.findById(id).map(airport -> {
-            if (request.name()    != null && !request.name().isBlank())    airport.setName(request.name());
-            if (request.city()    != null && !request.city().isBlank())    airport.setCity(request.city());
-            if (request.country() != null && !request.country().isBlank()) airport.setCountry(request.country());
+            if (request.name()    != null && !request.name().isBlank())    airport.setName(request.name().trim());
+            if (request.city()    != null && !request.city().isBlank())    airport.setCity(request.city().trim());
+            if (request.country() != null && !request.country().isBlank()) airport.setCountry(request.country().trim());
             if (request.iataCode() != null && !request.iataCode().isBlank()) {
-                String iata = request.iataCode().toUpperCase();
+                String iata = request.iataCode().trim().toUpperCase();
                 if (!iata.equals(airport.getIataCode()) && airportRepository.existsByIataCode(iata)) {
                     throw new IllegalArgumentException("Airport with IATA code '" + iata + "' already exists");
                 }
