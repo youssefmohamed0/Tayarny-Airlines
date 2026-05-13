@@ -5,7 +5,7 @@ class ApiService {
 
   async #getHeaders() {
     const session = await getSession()
-    const token = session?.user?.accessToken ?? ''
+    const token = (session as any)?.user?.accessToken ?? ''
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
@@ -98,6 +98,50 @@ class ApiService {
     return res.json()
   }
 
+  async addFlight(flight: any) {
+    const headers = await this.#getHeaders()
+    const res = await fetch(this.#baseUrl + '/api/admin/flight', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(flight),
+    })
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Add Flight Failed: ${res.status} - ${errorBody}`);
+    }
+    return res.json()
+  }
+
+  async modifyFlight(flightId: string, flight: any) {
+    const headers = await this.#getHeaders()
+    const res = await fetch(this.#baseUrl + '/api/admin/flight?flightId=' + flightId, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(flight),
+    })
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Modify Flight Failed: ${res.status} - ${errorBody}`);
+    }
+    return res.json()
+  }
+
+  async getSingleFlight(flightNumber?: string) {
+    const headers = await this.#getHeaders()
+    const params = flightNumber ? `?flightNumber=${flightNumber}` : ''
+    return await fetch(this.#baseUrl + '/api/admin/flight' + params, {
+      headers,
+    }).then(res => res.json())
+  }
+
+  async deleteFlight(flightId: string) {
+    const headers = await this.#getHeaders()
+    return await fetch(this.#baseUrl + '/api/admin/flight?flightId=' + flightId, {
+      method: 'DELETE',
+      headers,
+    }).then(res => res.ok)
+  }
+
   // ── Airports ────────────────────────────────────────
 
   async searchAirports(keyword: string) {
@@ -111,27 +155,22 @@ class ApiService {
 
   // ── Flights ─────────────────────────────────────────
 
-  // GET /api/flights with query params (GET with body is blocked by browsers)
-// ── Updated Flights Service ─────────────────────────
-
-async searchFlights(params: {
-  origin: string
-  destination: string
-  departureDate: string
-  travelers: { adults: number; children: number }
-  cabinClass: string
-}) {
-  const headers = await this.#getHeaders()
-  
-  const res = await fetch(`${this.#baseUrl}/api/flights`, {
-    method: 'POST', // Changed from GET to POST to allow a body
-    headers,
-    body: JSON.stringify(params), // This sends the { "origin": "LHR", ... } object
-  })
-
-  if (!res.ok) throw new Error(`Failed to search flights: ${res.status}`)
-  return res.json()
-}
+  async searchFlights(params: {
+    origin: string
+    destination: string
+    departureDate: string
+    travelers: { adults: number; children: number }
+    cabinClass: string
+  }) {
+    const headers = await this.#getHeaders()
+    const res = await fetch(`${this.#baseUrl}/api/flights`, {
+      method: 'GET',
+      headers,
+      body: JSON.stringify(params),
+    })
+    if (!res.ok) throw new Error(`Failed to search flights: ${res.status}`)
+    return res.json()
+  }
 
   // ── Seats ───────────────────────────────────────────
 
@@ -151,7 +190,6 @@ async searchFlights(params: {
 
   // ── Checkout ────────────────────────────────────────
 
-  // POST /api/checkout — no priceToken needed
   async checkout(payload: {
     flightNumber: string
     fareClass: string
@@ -162,6 +200,7 @@ async searchFlights(params: {
       dateOfBirth?: string
       assignedSeat: string
     }[]
+    priceToken?: string // Made optional here
     creditCardNumber: string
     cardExpiryDate: string
   }) {
@@ -180,7 +219,6 @@ async searchFlights(params: {
 
   // ── Reservations ────────────────────────────────────
 
-  // GET /api/user/reservations?page=0&size=10 — paginated response
   async getReservations(page = 0, size = 10) {
     const headers = await this.#getHeaders()
     const res = await fetch(
@@ -207,7 +245,7 @@ async searchFlights(params: {
 
   async cancelReservation(id: string) {
     const headers = await this.#getHeaders()
-    const res = await fetch(`${this.#baseUrl}/api/user/reservation/${id}/cancel`, { method: 'PUT', headers })
+    const res = await fetch(`${this.#baseUrl}/api/user/reservations/${id}/cancel`, { method: 'PUT', headers })
     if (!res.ok) throw new Error(`Failed to cancel reservation: ${res.status}`)
     return res.json()
   }

@@ -25,10 +25,10 @@ public class UserFlightController {
 
     // ==========================================
     // 1. SEARCH FLIGHTS
-    // GET /api/flights
+    // POST /api/flights
     // Uses @RequestBody to accept JSON search parameters.
     // ==========================================
-    @GetMapping
+    @PostMapping("")
     public ResponseEntity<UserFlightSearchResponse> searchFlights(
             @RequestBody FlightSearchRequest request) {
         UserFlightSearchResponse response = flightService.searchUserFlights(request);
