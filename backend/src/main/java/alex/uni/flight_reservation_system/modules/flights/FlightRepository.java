@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import alex.uni.flight_reservation_system.common.enums.FlightStatus;
+import org.springframework.data.jpa.repository.Modifying;
 
 @Repository
 public interface FlightRepository extends JpaRepository<Flight, UUID> {
@@ -39,6 +40,13 @@ public interface FlightRepository extends JpaRepository<Flight, UUID> {
 
     // Derived Query: Finds flights that are in a specific status before a certain time
     List<Flight> findByStatusAndArrivalTimeBefore(FlightStatus status, LocalDateTime time);
+
+    @Modifying
+    @Query("UPDATE Flight f SET f.status = :newStatus WHERE f.status = :oldStatus AND f.arrivalTime < :time")
+    int updateStatusForArrivedFlights(
+            @Param("oldStatus") FlightStatus oldStatus,
+            @Param("newStatus") FlightStatus newStatus,
+            @Param("time") LocalDateTime time);
 
     // Derived Query: Finds flights between specific airports departing after a certain time
     List<Flight> findByOriginAirportIdAndDestinationAirportIdAndDepartureTimeAfter(

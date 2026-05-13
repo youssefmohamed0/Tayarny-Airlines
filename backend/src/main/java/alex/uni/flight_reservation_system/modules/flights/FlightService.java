@@ -335,10 +335,13 @@ public class FlightService {
     @Transactional
     public void updateCompletedFlights() {
         LocalDateTime now = LocalDateTime.now();
-        List<Flight> scheduledFlights = flightRepository.findByStatusAndArrivalTimeBefore(FlightStatus.SCHEDULED, now);
-        for (Flight flight : scheduledFlights) {
-            flight.setStatus(FlightStatus.COMPLETED);
-            flightRepository.save(flight);
+        int updatedCount = flightRepository.updateStatusForArrivedFlights(
+                FlightStatus.SCHEDULED,
+                FlightStatus.COMPLETED,
+                now
+        );
+        if (updatedCount > 0) {
+            System.out.println("Marked " + updatedCount + " flights as COMPLETED");
         }
     }
 }
