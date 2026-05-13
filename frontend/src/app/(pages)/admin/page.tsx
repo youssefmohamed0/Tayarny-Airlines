@@ -51,8 +51,6 @@ export default function AdminPage() {
   // Airport/Airplane state
   const [airports, setAirports] = useState<any[]>([])
   const [airplanes, setAirplanes] = useState<any[]>([])
-  // airplaneModels now have shape: { id: string, name: string }
-  const [airplaneModels, setAirplaneModels] = useState<{ id: string; name: string }[]>([])
 
   // Users state
   const [users, setUsers] = useState<any[]>([])
@@ -63,7 +61,7 @@ export default function AdminPage() {
   const [savingAirport, setSavingAirport] = useState(false)
 
   // Airplane modal state
-  const [airplaneForm, setAirplaneForm] = useState({ modelId: '', condition: 'NEW', numberOfFlights: 0 })
+  const [airplaneForm, setAirplaneForm] = useState({ modelId: '', modelName: '', condition: 'NEW', numberOfFlights: 0 })
   const [savingAirplane, setSavingAirplane] = useState(false)
 
   const [saving, setSaving] = useState(false)
@@ -82,17 +80,6 @@ export default function AdminPage() {
       ])
       setAirports(apData)
       setAirplanes(plData)
-
-      // Derive unique models from the airplanes list: { id: modelId, name: modelName }
-      const seen = new Set<string>()
-      const models: { id: string; name: string }[] = []
-      for (const plane of plData) {
-        if (plane.modelId && !seen.has(plane.modelId)) {
-          seen.add(plane.modelId)
-          models.push({ id: plane.modelId, name: plane.modelName })
-        }
-      }
-      setAirplaneModels(models)
     } catch (e) {
       console.error('Failed to load airports or airplanes', e)
     }
@@ -242,11 +229,7 @@ export default function AdminPage() {
     }
   }
 
-  async function handleDeleteAirport(id: string) {
-    if (!confirm('Delete this airport?')) return
-    const ok = await apiService.deleteAirport(id)
-    if (ok) setAirports(prev => prev.filter(a => a.id !== id))
-  }
+
 
   // Airplane handlers — after adding, refresh both airplanes & derived models
   async function handleAddAirplane() {
@@ -257,13 +240,7 @@ export default function AdminPage() {
       const updatedPlanes = [...airplanes, created]
       setAirplanes(updatedPlanes)
 
-      // Re-derive models list so a newly added model shows up in the dropdown
-      const seen = new Set<string>(airplaneModels.map(m => m.id))
-      if (created.modelId && !seen.has(created.modelId)) {
-        setAirplaneModels(prev => [...prev, { id: created.modelId, name: created.modelName }])
-      }
-
-      setAirplaneForm({ modelId: '', condition: 'NEW', numberOfFlights: 0 })
+      setAirplaneForm({ modelId: '', modelName: '', condition: 'NEW', numberOfFlights: 0 })
     } catch (e: any) {
       alert(e.message || 'Failed to add airplane')
     } finally {
@@ -271,11 +248,7 @@ export default function AdminPage() {
     }
   }
 
-  async function handleDeleteAirplane(id: string) {
-    if (!confirm('Delete this airplane?')) return
-    const ok = await apiService.deleteAirplane(id)
-    if (ok) setAirplanes(prev => prev.filter(a => a.id !== id))
-  }
+
 
   const inputStyle = {
     padding: '10px 14px', borderRadius: 8, border: '1.5px solid #000',
@@ -667,10 +640,6 @@ export default function AdminPage() {
                     <span style={{ fontWeight: 700, color: '#1a1a2e', fontSize: 14 }}>{ap.iataCode}</span>
                     <span style={{ color: '#666', fontSize: 13, marginLeft: 8 }}>{ap.name} · {ap.city}, {ap.country}</span>
                   </div>
-                  <button onClick={() => handleDeleteAirport(ap.id)} style={{
-                    padding: '6px 12px', background: '#e74c3c', color: 'white',
-                    border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
-                  }}>🗑️ Delete</button>
                 </div>
               ))}
             </div>
@@ -686,22 +655,27 @@ export default function AdminPage() {
 
             <div style={{ border: '1.5px solid #e0e0e0', borderRadius: 10, padding: 16, marginBottom: 20, background: '#f9f9f9' }}>
               <p style={{ margin: '0 0 12px', fontWeight: 700, fontSize: 14, color: '#000' }}>Add New Airplane</p>
-              {airplaneModels.length === 0 && (
-                <p style={{ fontSize: 12, color: '#e74c3c', marginBottom: 10 }}>
-                  ⚠️ No airplane models available yet. Add at least one airplane first, or contact your backend team to seed models.
-                </p>
-              )}
+  
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 'bold', display: 'block', marginBottom: 3, color: '#000' }}>Model</label>
-                  {/* modelId → use m.id; display name → m.name */}
+                  <label style={{ fontSize: 12, fontWeight: 'bold', display: 'block', marginBottom: 3, color: '#000' }}>Model ID (Fixed)</label>
                   <input
-                      type="text"
-                      placeholder="Enter airplane model (e.g. Boeing 737)"
-                      value={airplaneForm.modelId}
-                      onChange={e => setAirplaneForm({ ...airplaneForm, modelId: e.target.value })}
-                      style={inputStyle}
-                    />
+                    type="text"
+                    placeholder="e.g. BOEING_777"
+                    value={airplaneForm.modelId}
+                    onChange={e => setAirplaneForm({ ...airplaneForm, modelId: e.target.value })}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 'bold', display: 'block', marginBottom: 3, color: '#000' }}>Model Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Boeing 777"
+                    value={airplaneForm.modelName || ''}
+                    onChange={e => setAirplaneForm({ ...airplaneForm, modelName: e.target.value })}
+                    style={inputStyle}
+                  />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 'bold', display: 'block', marginBottom: 3, color: '#000' }}>Condition</label>
@@ -719,11 +693,11 @@ export default function AdminPage() {
                     style={inputStyle} />
                 </div>
               </div>
-              <button onClick={handleAddAirplane} disabled={savingAirplane || !airplaneForm.modelId} style={{
+              <button onClick={handleAddAirplane} disabled={savingAirplane || !airplaneForm.modelId || !airplaneForm.modelName} style={{
                 padding: '10px 20px',
-                background: savingAirplane || !airplaneForm.modelId ? '#999' : '#9b59b6',
+                background: savingAirplane || !airplaneForm.modelId || !airplaneForm.modelName ? '#999' : '#9b59b6',
                 color: 'white', border: 'none', borderRadius: 8,
-                cursor: savingAirplane || !airplaneForm.modelId ? 'not-allowed' : 'pointer',
+                cursor: savingAirplane || !airplaneForm.modelId || !airplaneForm.modelName ? 'not-allowed' : 'pointer',
                 fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
               }}>
                 {savingAirplane ? 'Adding...' : '+ Add Airplane'}
@@ -745,10 +719,6 @@ export default function AdminPage() {
                       {plane.numberOfFlights != null && ` · ${plane.numberOfFlights} flights`}
                     </span>
                   </div>
-                  <button onClick={() => handleDeleteAirplane(plane.id)} style={{
-                    padding: '6px 12px', background: '#e74c3c', color: 'white',
-                    border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
-                  }}>🗑️ Delete</button>
                 </div>
               ))}
             </div>
