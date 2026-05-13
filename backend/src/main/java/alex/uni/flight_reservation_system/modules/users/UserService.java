@@ -33,7 +33,7 @@ public class UserService {
             User user = userRepository.findByUsername(userDetails.getUsername())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
             Integer totalFlights = (int) user.getReservations().stream()
-                    .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
+                    .filter(r -> r.getStatus() != ReservationStatus.CANCELLED)
                     .count();
             return UserResponse.builder()
                     .id(user.getId())
@@ -66,7 +66,7 @@ public class UserService {
             }
             userRepository.save(user);
             Integer totalFlights = (int) user.getReservations().stream()
-                    .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
+                    .filter(r -> r.getStatus() != ReservationStatus.CANCELLED)
                     .count();
             return UserResponse.builder()
                     .id(user.getId())
@@ -86,6 +86,7 @@ public class UserService {
         List<User> users = userRepository.findAll();
         List<AdminUsersResponse> adminUsersResponses = new ArrayList<>();
         for (User user : users) {
+            if (user.getRole().toString().equals("ADMIN")) continue;
             adminUsersResponses.add(AdminUsersResponse.builder()
                     .id(user.getId())
                     .username(user.getUsername())
@@ -93,7 +94,7 @@ public class UserService {
                     .email(user.getEmail())
                     .role(user.getRole().toString())
                     .totalFlights((int) user.getReservations().stream()
-                            .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
+                            .filter(r -> r.getStatus() != ReservationStatus.CANCELLED)
                             .count())
                     .build());
         }

@@ -153,6 +153,7 @@ public class FlightService {
 
                     return UserFlightSearchResponse.UserFareOptionDto.builder()
                             .fareName(fare.getFareName())
+                            .cabinClass(fare.getCabinClass())
                             .totalPrice(totalPrice)
                             .priceBreakdown(UserFlightSearchResponse.PriceBreakdownDto.builder()
                                     .adult(UserFlightSearchResponse.PassengerPriceDto.builder()
@@ -194,9 +195,7 @@ public class FlightService {
     public List<AdminFlightResponse> getAdminFlights(String flightNumber) {
         List<Flight> flights;
         if (flightNumber != null && !flightNumber.trim().isEmpty()) {
-            flights = flightRepository.findByFlightNumber(flightNumber.trim().toUpperCase())
-                    .map(List::of)
-                    .orElse(List.of());
+            flights = flightRepository.findByFlightNumberContainingIgnoreCase(flightNumber.trim());
         } else {
             flights = flightRepository.findAllWithDetails();
         }

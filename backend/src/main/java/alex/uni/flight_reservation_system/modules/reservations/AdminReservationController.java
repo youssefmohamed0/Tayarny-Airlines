@@ -30,10 +30,18 @@ public class AdminReservationController {
     @GetMapping
     public ResponseEntity<?> getAllReservations(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String username) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fareOption.flight.departureTime"));
-            Page<AdminReservationResponse> reservations = reservationService.getAllReservations(pageable);
+            Page<AdminReservationResponse> reservations;
+            
+            if (username != null && !username.trim().isEmpty()) {
+                reservations = reservationService.getReservationsByUsername(username.trim(), pageable);
+            } else {
+                reservations = reservationService.getAllReservations(pageable);
+            }
+            
             return ResponseEntity.ok(reservations);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

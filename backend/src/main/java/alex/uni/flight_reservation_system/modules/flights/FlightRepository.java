@@ -28,6 +28,14 @@ public interface FlightRepository extends JpaRepository<Flight, UUID> {
            "JOIN FETCH f.destinationAirport " +
            "JOIN FETCH f.airplane a " +
            "JOIN FETCH a.model " +
+           "WHERE LOWER(f.flightNumber) LIKE LOWER(CONCAT('%', :flightNumber, '%'))")
+    List<Flight> findByFlightNumberContainingIgnoreCase(@Param("flightNumber") String flightNumber);
+
+    @Query("SELECT f FROM Flight f " +
+           "JOIN FETCH f.originAirport " +
+           "JOIN FETCH f.destinationAirport " +
+           "JOIN FETCH f.airplane a " +
+           "JOIN FETCH a.model " +
            "WHERE f.id = :id")
     Optional<Flight> findByIdWithDetails(@Param("id") UUID id);
 

@@ -407,6 +407,12 @@ public class FlightReservationService {
     }
 
     @Transactional(readOnly = true)
+    public Page<AdminReservationResponse> getReservationsByUsername(String username, Pageable pageable) {
+        return reservationRepository.findByUserUsernameOrderByFareOptionFlightDepartureTimeDesc(username, pageable)
+                .map(this::toAdminReservationResponse);
+    }
+
+    @Transactional(readOnly = true)
     public AdminReservationResponse getReservationAdmin(UUID reservationId) {
         FlightReservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new RuntimeException("Reservation not found"));

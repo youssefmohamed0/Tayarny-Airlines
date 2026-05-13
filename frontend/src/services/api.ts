@@ -207,6 +207,14 @@ class ApiService {
 
   // ── Reservations ────────────────────────────────────
 
+async getUserReservations(page = 0, size = 10) {
+  const headers = await this.#getHeaders()
+  const url = `${this.#baseUrl}/api/user/reservations?page=${page}&size=${size}`
+  const res = await fetch(url, { method: 'GET', headers })
+  if (!res.ok) throw new Error(`Failed to fetch reservations: ${res.status}`)
+  return res.json()
+}
+
 async getReservations(page = 0, size = 10, username?: string) {
   const headers = await this.#getHeaders()
   let url = `${this.#baseUrl}/api/admin/reservations?page=${page}&size=${size}`
