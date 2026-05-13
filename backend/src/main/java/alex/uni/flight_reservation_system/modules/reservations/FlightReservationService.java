@@ -73,6 +73,10 @@ public class FlightReservationService {
         Flight flight = flightRepository.findByFlightNumber(request.getFlightNumber())
                 .orElseThrow(() -> new RuntimeException("Flight not found: " + request.getFlightNumber()));
 
+        if (flight.getStatus() != alex.uni.flight_reservation_system.common.enums.FlightStatus.SCHEDULED) {
+            throw new RuntimeException("Cannot book tickets for a flight that is " + flight.getStatus());
+        }
+
         // 3. Resolve fare option
         FareOption fareOption = fareOptionRepository
                 .findByFlightIdAndCabinClass(flight.getId(), request.getFareClass())
