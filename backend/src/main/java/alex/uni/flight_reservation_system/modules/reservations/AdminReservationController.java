@@ -9,7 +9,12 @@ import alex.uni.flight_reservation_system.modules.reservations.dto.AdminReservat
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
+import alex.uni.flight_reservation_system.modules.tickets.TicketService;
+import alex.uni.flight_reservation_system.modules.tickets.dto.TicketResponse;
+
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -19,12 +24,15 @@ public class AdminReservationController {
     @Autowired
     private FlightReservationService reservationService;
 
+    @Autowired
+    private TicketService ticketService;
+
     @GetMapping
     public ResponseEntity<?> getAllReservations(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size);
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fareOption.flight.departureTime"));
             Page<AdminReservationResponse> reservations = reservationService.getAllReservations(pageable);
             return ResponseEntity.ok(reservations);
         } catch (Exception e) {
@@ -47,6 +55,16 @@ public class AdminReservationController {
         try {
             AdminReservationResponse reservation = reservationService.adminCancelReservation(id);
             return ResponseEntity.ok(reservation);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/tickets")
+    public ResponseEntity<?> getReservationTickets(@PathVariable UUID id) {
+        try {
+            List<TicketResponse> tickets = ticketService.getTicketsByReservationId(id);
+            return ResponseEntity.ok(tickets);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

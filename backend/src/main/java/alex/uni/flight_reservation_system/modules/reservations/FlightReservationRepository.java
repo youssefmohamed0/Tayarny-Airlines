@@ -2,6 +2,7 @@ package alex.uni.flight_reservation_system.modules.reservations;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,6 +11,10 @@ import java.util.UUID;
 
 @Repository
 public interface FlightReservationRepository extends JpaRepository<FlightReservation, UUID> {
+
+    @Override
+    @EntityGraph(attributePaths = {"user", "fareOption", "fareOption.flight", "fareOption.flight.originAirport", "fareOption.flight.destinationAirport", "fareOption.flight.airplane.model"})
+    Page<FlightReservation> findAll(Pageable pageable);
 
     // Fetches all reservations (flight history) for a specific user ID
     List<FlightReservation> findByUserId(UUID userId);
