@@ -3,6 +3,7 @@ package alex.uni.flight_reservation_system.modules.reservations.AdminControllers
 import alex.uni.flight_reservation_system.modules.reservations.AdminReservationController;
 import alex.uni.flight_reservation_system.modules.reservations.FlightReservationService;
 import alex.uni.flight_reservation_system.modules.reservations.dto.AdminReservationResponse;
+import alex.uni.flight_reservation_system.modules.tickets.TicketService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -23,6 +24,9 @@ class AdminReservationControllerTest {
 
     @Mock
     private FlightReservationService reservationService;
+
+    @Mock
+    private TicketService ticketService;
 
     @InjectMocks
     private AdminReservationController adminReservationController;
@@ -57,6 +61,16 @@ class AdminReservationControllerTest {
         when(reservationService.adminCancelReservation(resId)).thenReturn(AdminReservationResponse.builder().build());
 
         ResponseEntity<?> response = adminReservationController.cancelReservation(resId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testGetReservationTickets() {
+        UUID resId = UUID.randomUUID();
+        when(ticketService.getTicketsByReservationId(resId)).thenReturn(new ArrayList<>());
+
+        ResponseEntity<?> response = adminReservationController.getReservationTickets(resId);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
