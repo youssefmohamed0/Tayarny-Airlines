@@ -127,6 +127,50 @@ class ApiService {
     if (!res.ok) throw new Error(`Failed to search flights: ${res.status}`)
     return res.json()
   }
+  async addFlight(flight: any) {
+  const headers = await this.#getHeaders()
+  const res = await fetch(this.#baseUrl + '/api/admin/flight', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(flight),
+  })
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(`Add Flight Failed: ${res.status} - ${errorBody}`);
+  }
+  return res.json()
+}
+
+async modifyFlight(flightId: string, flight: any) {
+  const headers = await this.#getHeaders()
+  // Ensure this is '?' NOT '&'
+  const res = await fetch(this.#baseUrl + '/api/admin/flight?flightId=' + flightId, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(flight),
+  })
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(`Modify Flight Failed: ${res.status} - ${errorBody}`);
+  }
+  return res.json()
+}
+
+async getSingleFlight(flightNumber?: string) {
+  const headers = await this.#getHeaders()
+  const params = flightNumber ? `?flightNumber=${flightNumber}` : ''
+  return await fetch(this.#baseUrl + '/api/admin/flight' + params, {
+    headers,
+  }).then(res => res.json())
+}
+
+async deleteFlight(flightId: string) {
+  const headers = await this.#getHeaders()
+  return await fetch(this.#baseUrl + '/api/admin/flight?flightId=' + flightId, {
+    method: 'DELETE',
+    headers,
+  }).then(res => res.ok)
+}
 
   // ── Seats ───────────────────────────────────────────
 
