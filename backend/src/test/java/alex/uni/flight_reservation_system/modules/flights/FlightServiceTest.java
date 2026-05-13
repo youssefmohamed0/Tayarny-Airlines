@@ -21,9 +21,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -127,7 +125,7 @@ class FlightServiceTest {
         AdminFlightRequest request = new AdminFlightRequest();
         request.setFlightNumber("EK123");
         request.setAircraft("Boeing 737");
-        
+
         AdminFlightRequest.DepartureDto dep = new AdminFlightRequest.DepartureDto();
         dep.setAirport("CAI");
         dep.setTime(LocalDateTime.now().plusDays(1));
@@ -162,11 +160,13 @@ class FlightServiceTest {
 
     @Test
     void testUpdateCompletedFlights() {
-        when(flightRepository.updateStatusForArrivedFlights(eq(FlightStatus.SCHEDULED), eq(FlightStatus.COMPLETED), any()))
+        when(flightRepository.updateStatusForArrivedFlights(eq(FlightStatus.SCHEDULED), eq(FlightStatus.COMPLETED),
+                any()))
                 .thenReturn(5);
 
         flightService.updateCompletedFlights();
 
-        verify(flightRepository).updateStatusForArrivedFlights(eq(FlightStatus.SCHEDULED), eq(FlightStatus.COMPLETED), any());
+        verify(flightRepository).updateStatusForArrivedFlights(eq(FlightStatus.SCHEDULED), eq(FlightStatus.COMPLETED),
+                any());
     }
 }

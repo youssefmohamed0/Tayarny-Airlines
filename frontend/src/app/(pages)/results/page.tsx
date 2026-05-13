@@ -21,7 +21,9 @@ interface Flight {
   departure: { airport: string; terminal?: string; time: string }
   arrival: { airport: string; time: string }
   fareOptions: FareOption[]
+  // Updated to support both common ID keys from backends
   flightId?: string
+  id?: string 
 }
 
 interface SearchParams {
@@ -54,24 +56,46 @@ export default function ResultsPage() {
     const searchParams = sessionStorage.getItem('searchParams')
     if (!results || !searchParams) { router.push('/search'); return }
     const parsed = JSON.parse(results)
-    setFlights(parsed.flights ?? parsed)
+    
+    // Some APIs wrap results in a 'flights' array, others return the array directly
+    setFlights(parsed.flights ?? (Array.isArray(parsed) ? parsed : []))
     setParams(JSON.parse(searchParams))
-  }, [])
+  }, [router])
 
+  /**
+   * EDITED FUNCTION: handleSelectFare
+   * This ensures the flightId is explicitly set before saving to session
+   */
   function handleSelectFare(flight: Flight, fare: FareOption) {
-    sessionStorage.setItem('selectedFlight', JSON.stringify(flight))
+    // Look for the ID in all likely places (flightId, id, or _id)
+    const actualId = flight.flightId || flight.id || (flight as any)._id;
+
+    if (!actualId) {
+      console.error("No Flight ID found in the object:", flight);
+      alert("Error: Flight ID is missing. Check console.");
+      return;
+    }
+
+    // Create a cleaned flight object that definitely has 'flightId'
+    const flightToSave = {
+      ...flight,
+      flightId: actualId 
+    };
+
+    sessionStorage.setItem('selectedFlight', JSON.stringify(flightToSave))
     sessionStorage.setItem('selectedFare', JSON.stringify(fare))
+    
     router.push('/booking')
   }
 
   if (!params) return null
 
   return (
-    <div>
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <button onClick={() => router.push('/search')}
-          style={{ background: 'none', border: 'none', color: '#378ADD', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit', marginBottom: 12, padding: 0 }}>
+          style={{ background: 'none', border: 'none', color: '#378ADD', cursor: 'pointer', fontSize: 14, marginBottom: 12, padding: 0 }}>
           ← Back to search
         </button>
         <h1 style={{ fontSize: 28, marginBottom: 4 }}>
@@ -90,7 +114,7 @@ export default function ResultsPage() {
           <p style={{ fontSize: 48 }}>✈️</p>
           <p style={{ fontSize: 18 }}>No flights found for this route</p>
           <button onClick={() => router.push('/search')}
-            style={{ marginTop: 16, padding: '10px 24px', borderRadius: 10, border: 'none', background: '#378ADD', color: 'white', cursor: 'pointer', fontFamily: 'inherit', fontSize: 15 }}>
+            style={{ marginTop: 16, padding: '10px 24px', borderRadius: 10, border: 'none', background: '#378ADD', color: 'white', cursor: 'pointer', fontSize: 15 }}>
             Try another search
           </button>
         </div>
@@ -102,13 +126,11 @@ export default function ResultsPage() {
               {/* Flight header */}
               <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-                  {/* Departure */}
                   <div>
                     <p style={{ fontSize: 28, fontWeight: 700, margin: 0, color: '#1a1a2e' }}>{formatTime(flight.departure.time)}</p>
                     <p style={{ fontSize: 13, color: '#999', margin: 0 }}>{flight.departure.airport}{flight.departure.terminal ? ` · T${flight.departure.terminal}` : ''}</p>
                   </div>
 
-                  {/* Duration */}
                   <div style={{ textAlign: 'center' }}>
                     <p style={{ fontSize: 12, color: '#999', margin: '0 0 4px' }}>{getDuration(flight.departure.time, flight.arrival.time)}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -119,7 +141,6 @@ export default function ResultsPage() {
                     <p style={{ fontSize: 11, color: '#bbb', margin: '4px 0 0' }}>Direct</p>
                   </div>
 
-                  {/* Arrival */}
                   <div>
                     <p style={{ fontSize: 28, fontWeight: 700, margin: 0, color: '#1a1a2e' }}>{formatTime(flight.arrival.time)}</p>
                     <p style={{ fontSize: 13, color: '#999', margin: 0 }}>{flight.arrival.airport}</p>
@@ -154,7 +175,6 @@ export default function ResultsPage() {
                         </p>
                       </div>
 
-                      {/* Benefits */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {fare.benefits.map((b, bi) => (
                           <p key={bi} style={{ fontSize: 12, color: '#555', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -164,11 +184,11 @@ export default function ResultsPage() {
                       </div>
 
                       {isSelected && (
-                        <button onClick={() => handleSelectFare(flight, fare)}
+                        <button onClick={(e) => { e.stopPropagation(); handleSelectFare(flight, fare); }}
                           style={{
                             marginTop: 12, width: '100%', padding: '10px', borderRadius: 8,
                             border: 'none', background: '#378ADD', color: 'white',
-                            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit'
+                            fontSize: 14, fontWeight: 600, cursor: 'pointer'
                           }}>
                           Select this fare →
                         </button>

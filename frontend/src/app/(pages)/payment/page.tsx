@@ -22,22 +22,24 @@ export default function PaymentPage() {
     setFlight(JSON.parse(f))
     setFare(JSON.parse(fa))
     setTravelers(JSON.parse(t))
-  }, [])
+  }, [router])
 
   function formatCardNumber(val: string) {
     return val.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
   }
 
   function formatExpiry(val: string) {
-    const digits = val.replace(/\D/g, '').slice(0, 4)
-    if (digits.length >= 3) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+    const digits = val.replace(/\D/g, '').slice(0, 6)
+    if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`
     return digits
   }
 
   function validate() {
     const raw = cardNumber.replace(/\s/g, '')
     if (raw.length !== 16) return 'Card number must be 16 digits'
-    if (!/^\d{2}\/\d{2}$/.test(cardExpiry)) return 'Expiry must be MM/YY'
+    if (!/^\d{2}\/\d{2,4}$/.test(cardExpiry)) return 'Expiry must be MM/YY or MM/YYYY'
+    const [month] = cardExpiry.split('/').map(n => parseInt(n, 10))
+    if (month < 1 || month > 12) return 'Invalid month'
     if (!cardName.trim()) return 'Cardholder name is required'
     return null
   }
@@ -49,9 +51,16 @@ export default function PaymentPage() {
     setLoading(true)
 
     try {
+      const [month, year] = cardExpiry.split('/')
+      const fullYear = year.length === 2 ? `20${year}` : year
+      const backendExpiry = `${month.padStart(2, '0')}/${fullYear}`
+
+      // fareClass must be "ECONOMY" or "BUSINESS" — not the fare name
+      const fareClass = fare.cabinClass ?? (fare.fareName?.toUpperCase().includes('BUSINESS') ? 'BUSINESS' : 'ECONOMY')
+
       const payload = {
         flightNumber: flight.flightNumber,
-        fareClass: fare.fareName,
+        fareClass,
         travelers: travelers.map((t: any) => ({
           type: t.type,
           fullName: t.fullName,
@@ -60,7 +69,7 @@ export default function PaymentPage() {
           assignedSeat: t.assignedSeat,
         })),
         creditCardNumber: cardNumber.replace(/\s/g, ''),
-        cardExpiryDate: cardExpiry,
+        cardExpiryDate: backendExpiry,
       }
 
       const result = await apiService.checkout(payload)
@@ -85,17 +94,16 @@ export default function PaymentPage() {
   }
 
   if (!flight || !fare) return null
-
   const brand = getCardBrand(cardNumber)
 
   return (
-    <div>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
       <button onClick={() => router.back()}
-        style={{ background: 'none', border: 'none', color: '#378ADD', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit', marginBottom: 16, padding: 0 }}>
+        style={{ background: 'none', border: 'none', color: '#378ADD', cursor: 'pointer', fontSize: 14, marginBottom: 16, padding: 0 }}>
         ← Back to passengers
       </button>
 
-      <h1 style={{ fontSize: 28, marginBottom: 24 }}>Payment</h1>
+      <h1 style={{ fontSize: 28, marginBottom: 24, color: '#1a1a2e' }}>Payment</h1>
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
@@ -108,7 +116,7 @@ export default function PaymentPage() {
             <div style={{
               background: 'linear-gradient(135deg, #1a1a2e 0%, #378ADD 100%)',
               borderRadius: 16, padding: '1.5rem', marginBottom: 24, color: 'white',
-              minHeight: 140, position: 'relative', boxShadow: '0 8px 24px rgba(55,138,221,0.3)'
+              minHeight: 140, boxShadow: '0 8px 24px rgba(55,138,221,0.3)'
             }}>
               <p style={{ fontSize: 12, opacity: 0.7, margin: '0 0 20px', letterSpacing: '0.1em' }}>TAYARNY AIRLINES</p>
               <p style={{ fontSize: 20, letterSpacing: '0.15em', margin: '0 0 20px', fontFamily: 'monospace' }}>
@@ -117,7 +125,7 @@ export default function PaymentPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div>
                   <p style={{ fontSize: 10, opacity: 0.6, margin: '0 0 2px', letterSpacing: '0.08em' }}>CARD HOLDER</p>
-                  <p style={{ fontSize: 13, margin: 0 }}>{cardName || 'YOUR NAME'}</p>
+                  <p style={{ fontSize: 13, margin: 0 }}>{cardName.toUpperCase() || 'YOUR NAME'}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontSize: 10, opacity: 0.6, margin: '0 0 2px', letterSpacing: '0.08em' }}>EXPIRES</p>
@@ -129,29 +137,27 @@ export default function PaymentPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 12, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Card number</label>
+                <label style={{ fontSize: 11, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase' }}>Card number</label>
                 <input value={cardNumber}
                   onChange={e => setCardNumber(formatCardNumber(e.target.value))}
-                  placeholder="1234 5678 9012 3456"
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1.5px solid #e5e5e5', fontSize: 16, outline: 'none', fontFamily: 'monospace', letterSpacing: '0.1em', boxSizing: 'border-box' }} />
-              </div>
-
-              <div style={{ display: 'flex', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 12, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Expiry date</label>
-                  <input value={cardExpiry}
-                    onChange={e => setCardExpiry(formatExpiry(e.target.value))}
-                    placeholder="MM/YY"
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1.5px solid #e5e5e5', fontSize: 15, outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box' }} />
-                </div>
+                  placeholder="0000 0000 0000 0000"
+                  style={{ width: '100%', padding: '12px', borderRadius: 10, border: '1.5px solid #e5e5e5', fontSize: 16, fontFamily: 'monospace', boxSizing: 'border-box', outline: 'none' }} />
               </div>
 
               <div>
-                <label style={{ fontSize: 12, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cardholder name</label>
+                <label style={{ fontSize: 11, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase' }}>Expiry date</label>
+                <input value={cardExpiry}
+                  onChange={e => setCardExpiry(formatExpiry(e.target.value))}
+                  placeholder="MM/YYYY"
+                  style={{ width: '100%', padding: '12px', borderRadius: 10, border: '1.5px solid #e5e5e5', fontSize: 15, fontFamily: 'monospace', boxSizing: 'border-box', outline: 'none' }} />
+              </div>
+
+              <div>
+                <label style={{ fontSize: 11, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase' }}>Cardholder name</label>
                 <input value={cardName}
                   onChange={e => setCardName(e.target.value)}
-                  placeholder="Name as on card"
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1.5px solid #e5e5e5', fontSize: 15, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                  placeholder="John Doe"
+                  style={{ width: '100%', padding: '12px', borderRadius: 10, border: '1.5px solid #e5e5e5', fontSize: 15, boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit' }} />
               </div>
             </div>
           </div>
@@ -166,8 +172,7 @@ export default function PaymentPage() {
             style={{
               width: '100%', padding: '16px', borderRadius: 12, border: 'none',
               background: loading ? '#aaa' : '#1a1a2e', color: 'white',
-              fontSize: 17, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-              fontFamily: 'inherit', transition: 'all 0.2s'
+              fontSize: 17, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit'
             }}>
             {loading ? 'Processing…' : `Pay $${fare.totalPrice?.toLocaleString()}`}
           </button>
@@ -187,29 +192,29 @@ export default function PaymentPage() {
                 {flight.flightNumber} · {fare.fareName}
               </p>
               <p style={{ fontSize: 13, color: '#666', margin: '0 0 2px' }}>
-                {flight.departure.airport} → {flight.arrival.airport}
+                {flight.departure?.airport} → {flight.arrival?.airport}
               </p>
               <p style={{ fontSize: 12, color: '#999', margin: 0 }}>
-                {new Date(flight.departure.time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                {flight.departure?.time ? new Date(flight.departure.time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}
               </p>
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 12, color: '#999', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Passengers</p>
+              <p style={{ fontSize: 11, color: '#aaa', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Passengers</p>
               {travelers.map((t: any, i: number) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f5f5f5' }}>
                   <span style={{ fontSize: 13, color: '#555' }}>
                     {t.fullName || `${t.type} ${i + 1}`} · {t.assignedSeat}
                   </span>
                   <span style={{ fontSize: 13, color: '#1a1a2e', fontWeight: 500 }}>
-                    ${fare.priceBreakdown?.[t.type.toLowerCase()]?.farePerPassenger?.toLocaleString() ?? '—'}
+                    {t.type}
                   </span>
                 </div>
               ))}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '2px solid #f0f0f0' }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1a2e' }}>Total</span>
+              <span style={{ fontSize: 16, fontWeight: 700 }}>Total</span>
               <span style={{ fontSize: 22, fontWeight: 700, color: '#378ADD' }}>${fare.totalPrice?.toLocaleString()}</span>
             </div>
           </div>
