@@ -76,15 +76,23 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
           )}
           {isAdmin && (
             <nav style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Link href="/admin" style={{ padding: '6px 14px', fontSize: 14, fontWeight: 600, color: '#4B3BF5', textDecoration: 'none', borderBottom: '2px solid #4B3BF5', borderRadius: 0 }}>
-                Admin Panel
-              </Link>
-              <Link href="/admin/reservations" style={{ padding: '6px 14px', fontSize: 14, fontWeight: 500, color: '#6b7280', textDecoration: 'none', borderBottom: '2px solid transparent', borderRadius: 0 }}>
-                Reservations
-              </Link>
-              <Link href="/dashboard" style={{ padding: '6px 14px', fontSize: 14, fontWeight: 500, color: '#6b7280', textDecoration: 'none', borderBottom: '2px solid transparent', borderRadius: 0 }}>
-                ← User View
-              </Link>
+              {[
+                { label: 'Admin Panel', path: '/admin' },
+                { label: 'Reservations', path: '/admin/reservations' },
+              ].map(link => {
+                const active = pathname === link.path
+                return (
+                  <Link key={link.path} href={link.path} style={{
+                    padding: '6px 14px', borderRadius: 8, textDecoration: 'none',
+                    fontSize: 14, fontWeight: active ? 700 : 500,
+                    color: active ? '#4B3BF5' : '#6b7280',
+                    borderBottom: active ? '2px solid #4B3BF5' : '2px solid transparent',
+                    transition: 'all 0.15s',
+                  }}>
+                    {link.label}
+                  </Link>
+                )
+              })}
             </nav>
           )}
 
