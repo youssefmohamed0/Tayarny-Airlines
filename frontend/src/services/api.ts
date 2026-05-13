@@ -344,13 +344,6 @@ async deleteAirport(id: string) {
 
 // ── Airplanes & Models ──────────────────────────────
 
-async getAirplaneModels() {
-  const headers = await this.#getHeaders()
-  // Assuming this endpoint exists to list models for the dropdown
-  const res = await fetch(`${this.#baseUrl}/api/admin/airplane-models`, { method: 'GET', headers })
-  if (!res.ok) throw new Error('Failed to fetch airplane models')
-  return res.json()
-}
 
 async getAirplanes() {
   const headers = await this.#getHeaders()

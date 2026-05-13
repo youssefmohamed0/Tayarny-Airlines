@@ -695,12 +695,13 @@ export default function AdminPage() {
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 'bold', display: 'block', marginBottom: 3, color: '#000' }}>Model</label>
                   {/* modelId → use m.id; display name → m.name */}
-                  <select value={airplaneForm.modelId} onChange={e => setAirplaneForm({ ...airplaneForm, modelId: e.target.value })} style={inputStyle}>
-                    <option value="">Select Model</option>
-                    {airplaneModels.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
+                  <input
+                      type="text"
+                      placeholder="Enter airplane model (e.g. Boeing 737)"
+                      value={airplaneForm.modelId}
+                      onChange={e => setAirplaneForm({ ...airplaneForm, modelId: e.target.value })}
+                      style={inputStyle}
+                    />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 'bold', display: 'block', marginBottom: 3, color: '#000' }}>Condition</label>
