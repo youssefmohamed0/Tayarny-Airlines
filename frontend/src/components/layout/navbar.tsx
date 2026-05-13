@@ -4,60 +4,117 @@ import { useRouter, usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { apiService } from '@/services/api'
 
+const LOGO = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ display: 'inline' }}>
+    <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="#4B3BF5"/>
+  </svg>
+)
+
 export default function Navbar({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
   async function logout() {
-    try {
-      await apiService.logout()
-    } catch {
-      // continue logout even if api call fails
-    }
+    try { await apiService.logout() } catch {}
     await signOut({ redirect: false })
     router.push('/auth')
   }
 
   const links = [
-    { label: '🏠 Dashboard', path: '/dashboard' },
-    { label: '🔍 Search flights', path: '/search' },
-    { label: '🧾 Reservation history', path: '/reservationhistory' },
-    { label: '👤 Profile', path: '/profile' },
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Search', path: '/search' },
+    { label: 'My Flights', path: '/reservationhistory' },
+    { label: 'Profile', path: '/profile' },
   ]
 
-  // Hide nav on auth and booking flow pages
   const hideNav = ['/auth', '/results', '/booking', '/payment', '/confirmation'].some(p =>
     pathname === p || pathname.startsWith(p + '/')
   )
 
   if (hideNav) return <>{children}</>
 
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'inherit' }}>
-      <aside style={{ width: 280, background: '#1a1a2e', display: 'flex', flexDirection: 'column', padding: '2rem 1.5rem' }}>
-        <h2 style={{ color: 'white', fontSize: 36, marginBottom: '3rem', paddingLeft: 12 }}>✈️ Flights</h2>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-          {links.map(link => (
-            <Link key={link.path} href={link.path}
-              style={{
-                padding: '14px 16px', borderRadius: 10,
-                textDecoration: 'none', fontSize: 17, display: 'block',
-                fontFamily: 'inherit',
-                background: pathname === link.path ? '#378ADD' : 'transparent',
-                color: pathname === link.path ? 'white' : '#aaa',
-              }}>
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        <button onClick={logout}
-          style={{ padding: '14px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 17, background: 'transparent', color: '#ff6b6b', fontFamily: 'inherit' }}>
-          🚪 Logout
-        </button>
-      </aside>
+  const isAdmin = pathname.startsWith('/admin')
 
-      <main style={{ flex: 1, padding: '3rem', background: '#f5f5f5', fontFamily: 'inherit' }}>
-        {children}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Top Navbar */}
+      <header style={{
+        background: 'white',
+        borderBottom: '1px solid #e8e8f0',
+        position: 'sticky', top: 0, zIndex: 100,
+        boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
+      }}>
+        <div style={{
+          maxWidth: 1200, margin: '0 auto',
+          padding: '0 24px', height: 62,
+          display: 'flex', alignItems: 'center', gap: 32,
+        }}>
+          {/* Logo */}
+          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+            <LOGO />
+            <span style={{ fontWeight: 800, fontSize: 20, color: '#4B3BF5', letterSpacing: '-0.3px' }}>Tayarny-Airlines</span>
+          </Link>
+
+          {/* Nav links */}
+          {!isAdmin && (
+            <nav style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
+              {links.map(link => {
+                const active = pathname === link.path
+                return (
+                  <Link key={link.path} href={link.path} style={{
+                    padding: '6px 14px', borderRadius: 8, textDecoration: 'none',
+                    fontSize: 14, fontWeight: active ? 700 : 500,
+                    color: active ? '#4B3BF5' : '#6b7280',
+                    borderBottom: active ? '2px solid #4B3BF5' : '2px solid transparent',
+                    transition: 'all 0.15s',
+                  }}>
+                    {link.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          )}
+          {isAdmin && (
+            <nav style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+              {[
+                { label: 'Admin Panel', path: '/admin' },
+                { label: 'Reservations', path: '/admin/reservations' },
+              ].map(link => {
+                const active = pathname === link.path
+                return (
+                  <Link key={link.path} href={link.path} style={{
+                    padding: '6px 14px', borderRadius: 8, textDecoration: 'none',
+                    fontSize: 14, fontWeight: active ? 700 : 500,
+                    color: active ? '#4B3BF5' : '#6b7280',
+                    borderBottom: active ? '2px solid #4B3BF5' : '2px solid transparent',
+                    transition: 'all 0.15s',
+                  }}>
+                    {link.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          )}
+
+          {/* Right side */}
+          <button onClick={logout} style={{
+            padding: '8px 18px', borderRadius: 8, border: '1.5px solid #e8e8f0',
+            background: 'white', color: '#6b7280', fontSize: 14, fontWeight: 500,
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ef4444'; (e.currentTarget as HTMLElement).style.color = '#ef4444' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e8f0'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}
+          >
+            Sign out
+          </button>
+        </div>
+      </header>
+
+      {/* Page content */}
+      <main style={{ flex: 1, background: '#f4f4fb' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
+          {children}
+        </div>
       </main>
     </div>
   )

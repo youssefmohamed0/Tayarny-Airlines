@@ -3,10 +3,24 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { apiService } from '@/services/api'
 
+function StatusBadge({ status }: { status: string }) {
+  const s: Record<string, { bg: string; color: string }> = {
+    CONFIRMED: { bg: '#d1fae5', color: '#065f46' },
+    CANCELLED: { bg: '#fee2e2', color: '#991b1b' },
+    PENDING:   { bg: '#fef3c7', color: '#92400e' },
+  }
+  const style = s[status] ?? s.PENDING
+  return (
+    <span style={{ background: style.bg, color: style.color, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: '0.04em' }}>
+      {status.charAt(0) + status.slice(1).toLowerCase()}
+    </span>
+  )
+}
+
 export default function UserReservationsPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const username = searchParams.get('username')
+  const usernameParam = searchParams.get('username')
 
   const [reservations, setReservations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -14,31 +28,16 @@ export default function UserReservationsPage() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState(usernameParam || '')
 
-  // Load reservations
-  useEffect(() => {
-    loadReservations()
-  }, [page, username])
-
-  // Reset page when username changes
-  useEffect(() => {
-    setPage(0)
-  }, [username])
+  useEffect(() => { loadReservations() }, [page, usernameParam])
+  useEffect(() => { setPage(0) }, [usernameParam])
 
   async function loadReservations() {
     setLoading(true)
     try {
-      const data = await apiService.getReservations(
-        page,
-        20,
-        username || undefined
-      )
-
-      const filtered = (data?.content ?? []).filter(
-  (r: any) => r.status === 'COMPLETED' || r.status === 'CONFIRMED'
-)
-
-setReservations(filtered)
+      const data = await apiService.getReservations(page, 20, usernameParam || undefined)
+      setReservations(data?.content ?? [])
       setTotalPages(data?.totalPages ?? 0)
     } catch (e: any) {
       setError(e.message || 'Failed to load reservations')
@@ -47,21 +46,20 @@ setReservations(filtered)
     }
   }
 
+  function handleSearch() {
+    if (searchQuery.trim()) {
+      router.push(`/admin/reservations?username=${searchQuery.trim()}`)
+    } else {
+      router.push('/admin/reservations')
+    }
+  }
+
   async function handleCancelReservation(reservationId: string) {
-    if (!confirm('Cancel this reservation?')) return
-
+    if (!confirm('Are you sure you want to cancel this booking? This action is permanent.')) return
     setCancelling(reservationId)
-
     try {
       await apiService.cancelReservationAdmin(reservationId)
-
-      setReservations(prev =>
-        prev.map(r =>
-          r.id === reservationId
-            ? { ...r, status: 'CANCELLED' }
-            : r
-        )
-      )
+      setReservations(prev => prev.map(r => r.id === reservationId ? { ...r, status: 'CANCELLED' } : r))
     } catch (e: any) {
       alert(e.message || 'Failed to cancel reservation')
     } finally {
@@ -69,244 +67,102 @@ setReservations(filtered)
     }
   }
 
-  const statusColor = (s: string) =>
-    s === 'CANCELLED'
-      ? '#e74c3c'
-      : s === 'CONFIRMED'
-      ? '#2ecc71'
-      : '#378ADD'
-
   return (
-    <div>
-      <button
-        onClick={() => router.back()}
-        style={{
-          marginBottom: 20,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: '#378ADD',
-          fontSize: 15,
-          fontFamily: 'inherit'
-        }}
-      >
-        ← Back to Admin
-      </button>
+    <div className="animate-in">
+      <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#111827', margin: '0 0 6px', letterSpacing: '-0.8px' }}>
+            {usernameParam ? `Bookings for @${usernameParam}` : 'Global Reservations'}
+          </h1>
+          <p style={{ color: '#6b7280', fontSize: 16, margin: 0 }}>Review, audit, and manage flight bookings.</p>
+        </div>
+        <button onClick={() => router.push('/admin')} className="btn btn-outline btn-sm">
+          ← Back to Dashboard
+        </button>
+      </div>
 
-      <h1 style={{ fontSize: 28, marginBottom: 4 }}>Reservations</h1>
-
-      <p style={{ color: '#666', marginBottom: 28 }}>
-        {username
-          ? `Showing reservations for @${username}`
-          : 'All reservations'}
-      </p>
+      {/* Search Bar */}
+      <div style={{ background: 'white', borderRadius: 16, padding: '1.25rem', border: '1px solid #e8e8f0', marginBottom: 24, display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ fontSize: 20 }}>👤</div>
+        <input 
+          placeholder="Filter by customer username..." 
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSearch()}
+          className="input"
+          style={{ flex: 1, border: 'none', background: 'transparent', padding: '8px 0', fontSize: 16 }}
+        />
+        <button onClick={handleSearch} className="btn btn-primary" style={{ padding: '10px 24px', borderRadius: 10 }}>
+          {usernameParam ? 'Update Filter' : 'Filter Bookings'}
+        </button>
+        {usernameParam && (
+          <button onClick={() => { setSearchQuery(''); router.push('/admin/reservations'); }} className="btn btn-ghost" style={{ padding: '10px 16px', borderRadius: 10 }}>
+            Clear
+          </button>
+        )}
+      </div>
 
       {loading ? (
-        <p style={{ color: '#999', textAlign: 'center', padding: '3rem' }}>
-          Loading...
-        </p>
+        <div style={{ textAlign: 'center', padding: '5rem', color: '#9ca3af' }}>
+          <p>Scanning reservation records…</p>
+        </div>
       ) : error ? (
-        <div
-          style={{
-            background: '#fff0f0',
-            border: '1px solid #e74c3c',
-            borderRadius: 12,
-            padding: '2rem',
-            color: '#e74c3c'
-          }}
-        >
-          ⚠️ {error}
+        <div className="card" style={{ padding: '3rem', textAlign: 'center', borderColor: '#fca5a5', background: '#fee2e2' }}>
+          <p style={{ fontSize: 32, marginBottom: 12 }}>⚠️</p>
+          <p style={{ color: '#991b1b', fontWeight: 600 }}>{error}</p>
         </div>
       ) : reservations.length === 0 ? (
-        <p
-          style={{
-            color: '#999',
-            textAlign: 'center',
-            padding: '3rem'
-          }}
-        >
-          No reservations found.
-        </p>
+        <div style={{ textAlign: 'center', padding: '5rem', background: 'white', borderRadius: 20, border: '1px solid #e8e8f0' }}>
+          <p style={{ fontSize: 48, marginBottom: 16 }}>📋</p>
+          <p style={{ color: '#6b7280', fontSize: 16 }}>No matching reservations found.</p>
+        </div>
       ) : (
         <>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-              marginBottom: 24
-            }}
-          >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 32 }}>
             {reservations.map(res => (
-              <div
-                key={res.id}
-                onClick={() =>
-                  router.push(`/admin/reservation/${res.id}`)
-                }
-                style={{
-                  background: 'white',
-                  borderRadius: 12,
-                  padding: '1.2rem 1.5rem',
-                  boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  border: '1.5px solid #e0e0e0'
-                }}
+              <div key={res.id} onClick={() => router.push(`/admin/reservation/${res.id}`)}
+                className="card card-hover"
+                style={{ background: 'white', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
               >
-                <div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      marginBottom: 4
-                    }}
-                  >
-                    <p
-                      style={{
-                        margin: 0,
-                        fontWeight: 700,
-                        fontSize: 15,
-                        color: '#1a1a2e'
-                      }}
-                    >
-                      {res.flightNumber} · {res.originCity} →{' '}
-                      {res.destinationCity}
-                    </p>
-
-                    <span
-                      style={{
-                        fontSize: 11,
-                        padding: '3px 8px',
-                        borderRadius: 20,
-                        background: statusColor(res.status),
-                        color: 'white',
-                        fontWeight: 700
-                      }}
-                    >
-                      {res.status}
-                    </span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                    <span style={{ fontWeight: 800, fontSize: 17, color: '#111827' }}>{res.flightNumber}</span>
+                    <span style={{ fontSize: 15, color: '#4b5563', fontWeight: 500 }}>{res.originCity} → {res.destinationCity}</span>
+                    <StatusBadge status={res.status} />
                   </div>
-
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 12,
-                      color: '#666'
-                    }}
-                  >
-                    {res.fullName} · {res.email} · {res.numSeats}{' '}
-                    seat(s) · ${res.totalPrice} ·{' '}
-                    {new Date(res.departureTime).toLocaleDateString()}
-                  </p>
-
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 11,
-                      color: '#999',
-                      marginTop: 2,
-                      fontFamily: 'monospace'
-                    }}
-                  >
-                    {res.id}
-                  </p>
+                  <div style={{ fontSize: 14, color: '#6b7280' }}>
+                    <strong style={{ color: '#374151' }}>{res.fullName}</strong> • @{res.username} • {res.numSeats} passengers • <span style={{ color: '#10b981', fontWeight: 700 }}>${res.totalPrice.toFixed(2)}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 6, fontFamily: 'monospace', letterSpacing: '0.02em' }}>
+                    📅 {new Date(res.departureTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} • ID: {res.id}
+                  </div>
                 </div>
-
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  {/* CANCEL BUTTON */}
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                   {res.status !== 'CANCELLED' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleCancelReservation(res.id)
-                      }}
+                    <button onClick={(e) => { e.stopPropagation(); handleCancelReservation(res.id); }}
                       disabled={cancelling === res.id}
-                      style={{
-                        padding: '6px 10px',
-                        borderRadius: 8,
-                        border: 'none',
-                        background:
-                          cancelling === res.id ? '#999' : '#e74c3c',
-                        color: 'white',
-                        cursor:
-                          cancelling === res.id
-                            ? 'not-allowed'
-                            : 'pointer',
-                        fontSize: 12,
-                        fontWeight: 600
-                      }}
-                    >
-                      {cancelling === res.id
-                        ? 'Cancelling...'
-                        : 'Cancel'}
+                      className="btn btn-ghost btn-sm" style={{ color: '#ef4444', borderColor: '#fee2e2' }}>
+                      {cancelling === res.id ? '...' : 'Void'}
                     </button>
                   )}
-
-                  <span style={{ color: '#378ADD', fontSize: 18 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#f4f4fb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4B3BF5', fontSize: 14 }}>
                     →
-                  </span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Pagination */}
-          {!username && totalPages > 1 && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: 8
-              }}
-            >
-              <button
-                onClick={() => setPage(p => Math.max(0, p - 1))}
-                disabled={page === 0}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 8,
-                  border: '1.5px solid #e0e0e0',
-                  background: 'white',
-                  cursor:
-                    page === 0 ? 'not-allowed' : 'pointer',
-                  fontFamily: 'inherit'
-                }}
-              >
+          {!usernameParam && totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 24, marginTop: 16 }}>
+              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                className="btn btn-outline btn-sm" style={{ borderRadius: 10 }}>
                 ← Prev
               </button>
-
-              <span
-                style={{
-                  padding: '8px 16px',
-                  fontSize: 14,
-                  color: '#666'
-                }}
-              >
-                Page {page + 1} of {totalPages}
-              </span>
-
-              <button
-                onClick={() =>
-                  setPage(p =>
-                    Math.min(totalPages - 1, p + 1)
-                  )
-                }
-                disabled={page === totalPages - 1}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 8,
-                  border: '1.5px solid #e0e0e0',
-                  background: 'white',
-                  cursor:
-                    page === totalPages - 1
-                      ? 'not-allowed'
-                      : 'pointer',
-                  fontFamily: 'inherit'
-                }}
-              >
+              <span style={{ fontSize: 14, color: '#6b7280', fontWeight: 600 }}>Page {page + 1} of {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
+                className="btn btn-outline btn-sm" style={{ borderRadius: 10 }}>
                 Next →
               </button>
             </div>

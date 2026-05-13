@@ -207,6 +207,14 @@ class ApiService {
 
   // ── Reservations ────────────────────────────────────
 
+async getUserReservations(page = 0, size = 10) {
+  const headers = await this.#getHeaders()
+  const url = `${this.#baseUrl}/api/user/reservations?page=${page}&size=${size}`
+  const res = await fetch(url, { method: 'GET', headers })
+  if (!res.ok) throw new Error(`Failed to fetch reservations: ${res.status}`)
+  return res.json()
+}
+
 async getReservations(page = 0, size = 10, username?: string) {
   const headers = await this.#getHeaders()
   let url = `${this.#baseUrl}/api/admin/reservations?page=${page}&size=${size}`
@@ -308,6 +316,65 @@ async cancelReservationAdmin(reservationId: string) {
     if (!res.ok) throw new Error(`Failed to fetch tickets: ${res.status}`)
     return res.json()
   }
+  // ── Airports ────────────────────────────────────────
+
+async getAirports() {
+  const headers = await this.#getHeaders()
+  const res = await fetch(`${this.#baseUrl}/api/admin/airports`, { method: 'GET', headers })
+  if (!res.ok) throw new Error('Failed to fetch airports')
+  return res.json()
+}
+
+async addAirport(airport: { name: string; city: string; country: string; iataCode: string }) {
+  const headers = await this.#getHeaders()
+  const res = await fetch(`${this.#baseUrl}/api/admin/airports`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(airport),
+  })
+  if (!res.ok) throw new Error('Failed to create airport')
+  return res.json()
+}
+
+async deleteAirport(id: string) {
+  const headers = await this.#getHeaders()
+  const res = await fetch(`${this.#baseUrl}/api/admin/airports/${id}`, { method: 'DELETE', headers })
+  return res.ok
+}
+
+// ── Airplanes & Models ──────────────────────────────
+
+async getAirplaneModels() {
+  const headers = await this.#getHeaders()
+  // Assuming this endpoint exists to list models for the dropdown
+  const res = await fetch(`${this.#baseUrl}/api/admin/airplane-models`, { method: 'GET', headers })
+  if (!res.ok) throw new Error('Failed to fetch airplane models')
+  return res.json()
+}
+
+async getAirplanes() {
+  const headers = await this.#getHeaders()
+  const res = await fetch(`${this.#baseUrl}/api/admin/airplanes`, { method: 'GET', headers })
+  if (!res.ok) throw new Error('Failed to fetch airplanes')
+  return res.json()
+}
+
+async addAirplane(airplane: { modelId: string; condition: string; numberOfFlights: number }) {
+  const headers = await this.#getHeaders()
+  const res = await fetch(`${this.#baseUrl}/api/admin/airplanes`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(airplane),
+  })
+  if (!res.ok) throw new Error('Failed to create airplane')
+  return res.json()
+}
+
+async deleteAirplane(id: string) {
+  const headers = await this.#getHeaders()
+  const res = await fetch(`${this.#baseUrl}/api/admin/airplanes/${id}`, { method: 'DELETE', headers })
+  return res.ok
+}
 }
 
 
