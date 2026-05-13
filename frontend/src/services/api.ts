@@ -302,6 +302,12 @@ async cancelReservationAdmin(reservationId: string) {
 
   return await res.json()
 }
+  async getReservationTicketsAdmin(id: string) {
+    const headers = await this.#getHeaders()
+    const res = await fetch(`${this.#baseUrl}/api/admin/reservations/${id}/tickets`, { method: 'GET', headers })
+    if (!res.ok) throw new Error(`Failed to fetch tickets: ${res.status}`)
+    return res.json()
+  }
 }
 
 
