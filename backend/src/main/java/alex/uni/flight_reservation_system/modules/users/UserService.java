@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -56,8 +55,12 @@ public class UserService {
                     .getPrincipal();
             User user = userRepository.findByUsername(userDetails.getUsername())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-            user.setFullName(reqeust.getFullName());
-            user.setEmail(reqeust.getEmail());
+            if (reqeust.getFullName() != null) {
+                user.setFullName(reqeust.getFullName().trim());
+            }
+            if (reqeust.getEmail() != null) {
+                user.setEmail(reqeust.getEmail().trim());
+            }
             if (reqeust.getPassword() != null && !reqeust.getPassword().isEmpty()) {
                 user.setPassword(passwordEncoder.encode(reqeust.getPassword()));
             }

@@ -106,10 +106,13 @@ public class FlightService {
     // ==========================================
 
     public UserFlightSearchResponse searchUserFlights(FlightSearchRequest request) {
-        Airport origin = airportRepository.findByIataCode(request.getOrigin())
-                .orElseThrow(() -> new RuntimeException("Origin airport not found: " + request.getOrigin()));
-        Airport destination = airportRepository.findByIataCode(request.getDestination())
-                .orElseThrow(() -> new RuntimeException("Destination airport not found: " + request.getDestination()));
+        String originCode = request.getOrigin().trim().toUpperCase();
+        Airport origin = airportRepository.findByIataCode(originCode)
+                .orElseThrow(() -> new RuntimeException("Origin airport not found: " + originCode));
+                
+        String destCode = request.getDestination().trim().toUpperCase();
+        Airport destination = airportRepository.findByIataCode(destCode)
+                .orElseThrow(() -> new RuntimeException("Destination airport not found: " + destCode));
 
         int totalTravelers = request.getTravelers().getAdults() + request.getTravelers().getChildren();
         LocalDateTime startOfDay = request.getDepartureDate().atStartOfDay();
@@ -135,9 +138,10 @@ public class FlightService {
 
         List<FareOption> fareOptions = fareOptionService.getFareOptionsForFlight(flight.getId());
 
-        if (request.getCabinClass() != null && !request.getCabinClass().isEmpty()) {
+        if (request.getCabinClass() != null && !request.getCabinClass().trim().isEmpty()) {
+            String requestedCabin = request.getCabinClass().trim().toUpperCase();
             fareOptions = fareOptions.stream()
-                    .filter(f -> f.getCabinClass().equalsIgnoreCase(request.getCabinClass()))
+                    .filter(f -> f.getCabinClass().equalsIgnoreCase(requestedCabin))
                     .collect(Collectors.toList());
         }
 
@@ -189,8 +193,8 @@ public class FlightService {
 
     public List<AdminFlightResponse> getAdminFlights(String flightNumber) {
         List<Flight> flights;
-        if (flightNumber != null && !flightNumber.isEmpty()) {
-            flights = flightRepository.findByFlightNumber(flightNumber)
+        if (flightNumber != null && !flightNumber.trim().isEmpty()) {
+            flights = flightRepository.findByFlightNumber(flightNumber.trim().toUpperCase())
                     .map(List::of)
                     .orElse(List.of());
         } else {
@@ -254,24 +258,27 @@ public class FlightService {
     }
 
     private void updateFlightFromRequest(Flight flight, AdminFlightRequest request) {
-        flight.setFlightNumber(request.getFlightNumber());
+        flight.setFlightNumber(request.getFlightNumber().trim().toUpperCase());
         flight.setDepartureTime(request.getDeparture().getTime());
         flight.setArrivalTime(request.getArrival().getTime());
-        flight.setTerminal(request.getDeparture().getTerminal());
+        flight.setTerminal(request.getDeparture().getTerminal() != null ? request.getDeparture().getTerminal().trim() : null);
 
-        Airport origin = airportRepository.findByIataCode(request.getDeparture().getAirport())
-                .orElseThrow(() -> new RuntimeException("Origin airport not found: " + request.getDeparture().getAirport()));
+        String originCode = request.getDeparture().getAirport().trim().toUpperCase();
+        Airport origin = airportRepository.findByIataCode(originCode)
+                .orElseThrow(() -> new RuntimeException("Origin airport not found: " + originCode));
         flight.setOriginAirport(origin);
 
-        Airport destination = airportRepository.findByIataCode(request.getArrival().getAirport())
-                .orElseThrow(() -> new RuntimeException("Destination airport not found: " + request.getArrival().getAirport()));
+        String destCode = request.getArrival().getAirport().trim().toUpperCase();
+        Airport destination = airportRepository.findByIataCode(destCode)
+                .orElseThrow(() -> new RuntimeException("Destination airport not found: " + destCode));
         flight.setDestinationAirport(destination);
 
-        AirplaneModel model = airplaneModelRepository.findByModelName(request.getAircraft())
-                .orElseThrow(() -> new RuntimeException("Airplane model not found: " + request.getAircraft()));
+        String aircraftName = request.getAircraft().trim();
+        AirplaneModel model = airplaneModelRepository.findByModelName(aircraftName)
+                .orElseThrow(() -> new RuntimeException("Airplane model not found: " + aircraftName));
         List<Airplane> airplanes = airplaneRepository.findByModel(model);
         if (airplanes.isEmpty()) {
-            throw new RuntimeException("No airplanes available for model: " + request.getAircraft());
+            throw new RuntimeException("No airplanes available for model: " + aircraftName);
         }
         flight.setAirplane(airplanes.get(0));
     }
@@ -283,9 +290,10 @@ public class FlightService {
 
         List<FareOption> fareOptions = fareDtos.stream().map(dto -> {
             FareOption fare = new FareOption();
+            String normalizedFareName = dto.getFareName().trim().toUpperCase();
             fare.setFlight(flight);
-            fare.setFareName(dto.getFareName());
-            fare.setCabinClass(dto.getFareName()); // Derive cabin class from fare name
+            fare.setFareName(normalizedFareName);
+            fare.setCabinClass(normalizedFareName); // Derive cabin class from fare name
             fare.setPricePerAdult(dto.getPricePerSeat());
             fare.setPricePerChild(dto.getPricePerSeat());
             fare.setAvailableSeats(dto.getAvailableSeats());

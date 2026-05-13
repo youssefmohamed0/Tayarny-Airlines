@@ -31,7 +31,7 @@ public class AirplaneService {
 
         Airplane airplane = new Airplane();
         airplane.setModel(model);
-        airplane.setCondition(request.condition());
+        airplane.setCondition(request.condition() != null ? request.condition().trim().toUpperCase() : null);
         airplane.setNumberOfFlights(request.numberOfFlights());
 
         Airplane saved = airplaneRepository.save(airplane);
@@ -56,12 +56,12 @@ public class AirplaneService {
     public List<AirplaneDto> list(UUID modelId, String condition) {
         List<Airplane> airplanes;
 
-        if (modelId != null && condition != null && !condition.isBlank()) {
-            airplanes = airplaneRepository.findByModelIdAndCondition(modelId, condition);
+        if (modelId != null && condition != null && !condition.trim().isBlank()) {
+            airplanes = airplaneRepository.findByModelIdAndCondition(modelId, condition.trim().toUpperCase());
         } else if (modelId != null) {
             airplanes = airplaneRepository.findByModelId(modelId);
-        } else if (condition != null && !condition.isBlank()) {
-            airplanes = airplaneRepository.findByCondition(condition);
+        } else if (condition != null && !condition.trim().isBlank()) {
+            airplanes = airplaneRepository.findByCondition(condition.trim().toUpperCase());
         } else {
             airplanes = airplaneRepository.findAll();
         }
