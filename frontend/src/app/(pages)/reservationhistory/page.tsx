@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { apiService } from "@/services/api"; // adjust path if needed
-
-// ── Types ──────────────────────────────────────────────────────────────────────
+import { apiService } from "@/services/api";
 
 interface Ticket {
   id: string;
@@ -16,6 +13,7 @@ interface Ticket {
   price: number;
   passportNumber: string | null;
   dateOfBirth: string;
+  status?: string;
 }
 
 interface Reservation {
@@ -35,130 +33,74 @@ interface Reservation {
   tickets: Ticket[];
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
 function isFuture(departureTime: string) {
   return new Date(departureTime) > new Date();
 }
 
 function formatDate(dt: string) {
-  return new Date(dt).toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return new Date(dt).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 }
 
 function formatTime(dt: string) {
-  return new Date(dt).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return new Date(dt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 function getDuration(dep: string, arr: string) {
-  const mins = Math.round(
-    (new Date(arr).getTime() - new Date(dep).getTime()) / 60000
-  );
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${h}h ${m}m`;
+  const mins = Math.round((new Date(arr).getTime() - new Date(dep).getTime()) / 60000);
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
 function airportCode(city: string) {
   const map: Record<string, string> = {
-    Cairo: "CAI",
-    London: "LHR",
-    Dubai: "DXB",
-    "New York": "JFK",
-    Paris: "CDG",
+    Cairo: "CAI", London: "LHR", Dubai: "DXB", "New York": "JFK",
+    Paris: "CDG", Amsterdam: "AMS", Istanbul: "IST", Rome: "FCO", "Kuala Lumpur": "KUL",
   };
   return map[city] ?? city.slice(0, 3).toUpperCase();
 }
 
-// ── Status Badge ───────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: Reservation["status"] }) {
-  const styles: Record<string, string> = {
-    CONFIRMED:
-      "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800",
-    CANCELLED:
-      "bg-red-50 text-red-600 border border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800",
-    PENDING:
-      "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
+function StatusBadge({ status }: { status: string }) {
+  const s: Record<string, { bg: string; color: string }> = {
+    CONFIRMED: { bg: "#e8f8f0", color: "#2ecc71" },
+    CANCELLED: { bg: "#fff0f0", color: "#e74c3c" },
+    PENDING:   { bg: "#fff8e1", color: "#f39c12" },
   };
+  const style = s[status] ?? s.PENDING;
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? styles.PENDING}`}
-    >
+    <span style={{ background: style.bg, color: style.color, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>
       {status.charAt(0) + status.slice(1).toLowerCase()}
     </span>
   );
 }
 
-// ── Ticket Card ────────────────────────────────────────────────────────────────
-
 function TicketCard({ ticket }: { ticket: Ticket }) {
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-            {ticket.passengerName
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}
+    <div style={{ background: '#fafafa', borderRadius: 12, border: '1px dashed #ddd', padding: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#378ADD', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>
+            {ticket.passengerName.split(' ').map(n => n[0]).join('')}
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-              {ticket.passengerName}
-            </p>
-            <p className="text-xs text-neutral-500">
-              {ticket.passengerType.charAt(0) +
-                ticket.passengerType.slice(1).toLowerCase()}
-            </p>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{ticket.passengerName}</p>
+            <p style={{ margin: 0, fontSize: 12, color: '#999' }}>{ticket.passengerType.charAt(0) + ticket.passengerType.slice(1).toLowerCase()}</p>
           </div>
         </div>
-        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-          ${ticket.price.toFixed(2)}
-        </p>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>${ticket.price.toFixed(2)}</p>
       </div>
-
-      <div className="my-3 border-t border-dashed border-neutral-200 dark:border-neutral-700" />
-
-      <div className="grid grid-cols-3 gap-3">
+      <div style={{ borderTop: '1px dashed #e0e0e0', paddingTop: 10, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-neutral-400">Seat</p>
-          <p className="mt-0.5 text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-            {ticket.seatNumber}
-          </p>
-          <p className="text-xs text-neutral-500">{ticket.seatPosition}</p>
+          <p style={{ margin: 0, fontSize: 10, color: '#aaa', textTransform: 'uppercase' }}>Seat</p>
+          <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 700 }}>{ticket.seatNumber}</p>
+          <p style={{ margin: 0, fontSize: 11, color: '#999' }}>{ticket.seatPosition}</p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-neutral-400">Class</p>
-          <p className="mt-0.5 text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-            {ticket.seatClass.charAt(0) + ticket.seatClass.slice(1).toLowerCase()}
-          </p>
+          <p style={{ margin: 0, fontSize: 10, color: '#aaa', textTransform: 'uppercase' }}>Class</p>
+          <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 600 }}>{ticket.seatClass.charAt(0) + ticket.seatClass.slice(1).toLowerCase()}</p>
         </div>
         {ticket.passportNumber && (
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-neutral-400">Passport</p>
-            <p className="mt-0.5 text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-              {ticket.passportNumber}
-            </p>
-          </div>
-        )}
-        {ticket.dateOfBirth && (
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-neutral-400">Date of birth</p>
-            <p className="mt-0.5 text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-              {new Date(ticket.dateOfBirth).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </p>
+            <p style={{ margin: 0, fontSize: 10, color: '#aaa', textTransform: 'uppercase' }}>Passport</p>
+            <p style={{ margin: '2px 0 0', fontSize: 13, fontWeight: 600 }}>{ticket.passportNumber}</p>
           </div>
         )}
       </div>
@@ -166,251 +108,157 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
   );
 }
 
-// ── Reservation Card (list item) ───────────────────────────────────────────────
-
-function ReservationCard({
-  reservation,
-  onClick,
-}: {
-  reservation: Reservation;
-  onClick: () => void;
-}) {
+function ReservationCard({ reservation, onClick }: { reservation: Reservation; onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className="group w-full rounded-2xl border border-neutral-200 bg-white p-5 text-left transition-all hover:border-neutral-300 hover:shadow-sm active:scale-[0.995] dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600"
+    <button onClick={onClick}
+      style={{ width: '100%', textAlign: 'left', background: 'white', borderRadius: 16, border: '1.5px solid #eee', padding: '1.25rem 1.5rem', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#378ADD'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(55,138,221,0.1)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#eee'; (e.currentTarget as HTMLElement).style.boxShadow = 'none' }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="text-center">
-            <p className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-              {airportCode(reservation.originCity)}
-            </p>
-            <p className="text-xs text-neutral-500">{reservation.originCity}</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1a1a2e' }}>{airportCode(reservation.originCity)}</p>
+            <p style={{ margin: 0, fontSize: 11, color: '#999' }}>{reservation.originCity}</p>
           </div>
-
-          <div className="flex flex-col items-center gap-1">
-            <p className="text-[10px] text-neutral-400">
-              {getDuration(reservation.departureTime, reservation.arrivalTime)}
-            </p>
-            <div className="flex items-center gap-1">
-              <div className="h-px w-6 bg-neutral-300 dark:bg-neutral-600" />
-              <span className="text-base text-neutral-400">✈</span>
-              <div className="h-px w-6 bg-neutral-300 dark:bg-neutral-600" />
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ margin: '0 0 4px', fontSize: 11, color: '#bbb' }}>{getDuration(reservation.departureTime, reservation.arrivalTime)}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ width: 24, height: 1, background: '#ddd' }} />
+              <span style={{ fontSize: 14, color: '#aaa' }}>✈</span>
+              <div style={{ width: 24, height: 1, background: '#ddd' }} />
             </div>
-            <p className="text-[10px] text-neutral-400">{reservation.cabinClass}</p>
+            <p style={{ margin: '4px 0 0', fontSize: 10, color: '#bbb' }}>{reservation.cabinClass}</p>
           </div>
-
-          <div className="text-center">
-            <p className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-              {airportCode(reservation.destinationCity)}
-            </p>
-            <p className="text-xs text-neutral-500">{reservation.destinationCity}</p>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1a1a2e' }}>{airportCode(reservation.destinationCity)}</p>
+            <p style={{ margin: 0, fontSize: 11, color: '#999' }}>{reservation.destinationCity}</p>
           </div>
         </div>
-
-        <div className="flex flex-col items-end gap-1.5">
+        <div style={{ textAlign: 'right' }}>
           <StatusBadge status={reservation.status} />
-          <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            ${reservation.totalPrice.toFixed(2)}
-          </p>
+          <p style={{ margin: '6px 0 0', fontSize: 18, fontWeight: 700, color: '#1a1a2e' }}>${reservation.totalPrice.toFixed(2)}</p>
         </div>
       </div>
-
-      <div className="mt-4 flex items-center justify-between border-t border-dashed border-neutral-100 pt-3 dark:border-neutral-800">
-        <div className="flex items-center gap-4 text-xs text-neutral-500">
-          <span className="font-medium text-neutral-700 dark:text-neutral-300">
-            {reservation.flightNumber}
-          </span>
+      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#999', flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 600, color: '#555' }}>{reservation.flightNumber}</span>
           <span>{formatDate(reservation.departureTime)}</span>
-          <span>
-            {formatTime(reservation.departureTime)} → {formatTime(reservation.arrivalTime)}
-          </span>
-          <span>
-            {reservation.numSeats} seat{reservation.numSeats > 1 ? "s" : ""}
-          </span>
+          <span>{formatTime(reservation.departureTime)} → {formatTime(reservation.arrivalTime)}</span>
+          <span>{reservation.numSeats} seat{reservation.numSeats > 1 ? 's' : ''}</span>
         </div>
-        <span className="text-xs text-neutral-400 transition-colors group-hover:text-neutral-600 dark:group-hover:text-neutral-300">
-          View details →
-        </span>
+        <span style={{ fontSize: 12, color: '#bbb' }}>View details →</span>
       </div>
     </button>
   );
 }
 
-// ── Detail View ────────────────────────────────────────────────────────────────
-
-function ReservationDetail({
-  reservation,
-  onBack,
-  onCancel,
-  cancelling,
-}: {
-  reservation: Reservation;
-  onBack: () => void;
-  onCancel: (id: string) => Promise<void>;
-  cancelling: boolean;
+function ReservationDetail({ reservation, onBack, onCancel, cancelling }: {
+  reservation: Reservation; onBack: () => void; onCancel: (id: string) => Promise<void>; cancelling: boolean;
 }) {
   const [showTickets, setShowTickets] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  const canCancel =
-    isFuture(reservation.departureTime) && reservation.status !== "CANCELLED";
+  const canCancel = isFuture(reservation.departureTime) && reservation.status !== "CANCELLED";
 
   return (
     <div>
-      <button
-        onClick={onBack}
-        className="mb-6 flex items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
-      >
+      <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#378ADD', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit', marginBottom: 20, padding: 0 }}>
         ← Back to reservations
       </button>
 
-      {/* Header card */}
-      <div className="mb-4 rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
-        <div className="flex items-start justify-between">
+      <div style={{ background: 'white', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-neutral-500">
-                {reservation.flightNumber}
-              </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: 13, color: '#999' }}>{reservation.flightNumber}</span>
               <StatusBadge status={reservation.status} />
             </div>
-            <div className="mt-3 flex items-center gap-5">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
               <div>
-                <p className="text-4xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-                  {airportCode(reservation.originCity)}
-                </p>
-                <p className="mt-1 text-sm text-neutral-500">{reservation.originCity}</p>
-                <p className="text-xs text-neutral-400">{reservation.originAirport}</p>
+                <p style={{ margin: 0, fontSize: 36, fontWeight: 700, color: '#1a1a2e' }}>{airportCode(reservation.originCity)}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: '#666' }}>{reservation.originCity}</p>
+                <p style={{ margin: 0, fontSize: 11, color: '#aaa' }}>{reservation.originAirport}</p>
               </div>
-              <div className="flex flex-col items-center gap-1 px-2">
-                <p className="text-xs text-neutral-400">
-                  {getDuration(reservation.departureTime, reservation.arrivalTime)}
-                </p>
-                <div className="flex items-center gap-1">
-                  <div className="h-px w-10 bg-neutral-300 dark:bg-neutral-600" />
-                  <span className="text-xl text-neutral-400">✈</span>
-                  <div className="h-px w-10 bg-neutral-300 dark:bg-neutral-600" />
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ margin: '0 0 4px', fontSize: 11, color: '#bbb' }}>{getDuration(reservation.departureTime, reservation.arrivalTime)}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 32, height: 1, background: '#ddd' }} />
+                  <span style={{ fontSize: 18 }}>✈</span>
+                  <div style={{ width: 32, height: 1, background: '#ddd' }} />
                 </div>
-                <p className="text-xs text-neutral-400">{reservation.fareName}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 11, color: '#bbb' }}>{reservation.fareName}</p>
               </div>
               <div>
-                <p className="text-4xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-                  {airportCode(reservation.destinationCity)}
-                </p>
-                <p className="mt-1 text-sm text-neutral-500">{reservation.destinationCity}</p>
-                <p className="text-xs text-neutral-400">{reservation.destinationAirport}</p>
+                <p style={{ margin: 0, fontSize: 36, fontWeight: 700, color: '#1a1a2e' }}>{airportCode(reservation.destinationCity)}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: '#666' }}>{reservation.destinationCity}</p>
+                <p style={{ margin: 0, fontSize: 11, color: '#aaa' }}>{reservation.destinationAirport}</p>
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100">
-              ${reservation.totalPrice.toFixed(2)}
-            </p>
-            <p className="mt-1 text-xs text-neutral-400">
-              {reservation.numSeats} passenger{reservation.numSeats > 1 ? "s" : ""}
-            </p>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>${reservation.totalPrice.toFixed(2)}</p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#aaa' }}>{reservation.numSeats} passenger{reservation.numSeats > 1 ? 's' : ''}</p>
           </div>
         </div>
 
-        {/* Times strip */}
-        <div className="mt-5 grid grid-cols-3 gap-4 rounded-xl bg-neutral-50 p-4 dark:bg-neutral-800">
+        <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, background: '#f8f9ff', borderRadius: 12, padding: '1rem' }}>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-neutral-400">Departure</p>
-            <p className="mt-0.5 text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {formatTime(reservation.departureTime)}
-            </p>
-            <p className="text-xs text-neutral-500">{formatDate(reservation.departureTime)}</p>
+            <p style={{ margin: 0, fontSize: 10, color: '#aaa', textTransform: 'uppercase' }}>Departure</p>
+            <p style={{ margin: '4px 0 0', fontSize: 18, fontWeight: 700 }}>{formatTime(reservation.departureTime)}</p>
+            <p style={{ margin: 0, fontSize: 12, color: '#999' }}>{formatDate(reservation.departureTime)}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-neutral-400">Arrival</p>
-            <p className="mt-0.5 text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {formatTime(reservation.arrivalTime)}
-            </p>
-            <p className="text-xs text-neutral-500">{formatDate(reservation.arrivalTime)}</p>
+            <p style={{ margin: 0, fontSize: 10, color: '#aaa', textTransform: 'uppercase' }}>Arrival</p>
+            <p style={{ margin: '4px 0 0', fontSize: 18, fontWeight: 700 }}>{formatTime(reservation.arrivalTime)}</p>
+            <p style={{ margin: 0, fontSize: 12, color: '#999' }}>{formatDate(reservation.arrivalTime)}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-neutral-400">Cabin</p>
-            <p className="mt-0.5 text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {reservation.cabinClass.charAt(0) +
-                reservation.cabinClass.slice(1).toLowerCase()}
-            </p>
-            <p className="text-xs text-neutral-500">{reservation.fareName}</p>
+            <p style={{ margin: 0, fontSize: 10, color: '#aaa', textTransform: 'uppercase' }}>Cabin</p>
+            <p style={{ margin: '4px 0 0', fontSize: 18, fontWeight: 700 }}>{reservation.cabinClass.charAt(0) + reservation.cabinClass.slice(1).toLowerCase()}</p>
+            <p style={{ margin: 0, fontSize: 12, color: '#999' }}>{reservation.fareName}</p>
           </div>
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="mb-4 flex gap-3">
-        <button
-          onClick={() => setShowTickets((v) => !v)}
-          className={`flex-1 rounded-xl border py-3 text-sm font-medium transition-all ${
-            showTickets
-              ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
-              : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
-          }`}
-        >
-          🎫 {showTickets ? "Hide tickets" : "View tickets"}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <button onClick={() => setShowTickets(v => !v)} style={{
+          flex: 1, padding: '12px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
+          background: showTickets ? '#1a1a2e' : 'white', color: showTickets ? 'white' : '#1a1a2e',
+          border: showTickets ? '1.5px solid #1a1a2e' : '1.5px solid #e5e5e5',
+        }}>
+          🎫 {showTickets ? 'Hide tickets' : 'View tickets'}
         </button>
-
         {canCancel ? (
-          <button
-            onClick={() => setShowConfirm(true)}
-            disabled={cancelling}
-            className="flex-1 rounded-xl border border-red-200 bg-red-50 py-3 text-sm font-medium text-red-600 transition-all hover:bg-red-100 disabled:opacity-50 dark:border-red-900 dark:bg-red-950 dark:text-red-400"
-          >
-            {cancelling ? "Cancelling…" : "✕ Cancel reservation"}
+          <button onClick={() => setShowConfirm(true)} disabled={cancelling} style={{
+            flex: 1, padding: '12px', borderRadius: 12, cursor: cancelling ? 'not-allowed' : 'pointer',
+            fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
+            background: '#fff0f0', color: '#e74c3c', border: '1.5px solid rgba(231,76,60,0.3)', opacity: cancelling ? 0.6 : 1
+          }}>
+            {cancelling ? 'Cancelling…' : '✕ Cancel reservation'}
           </button>
         ) : (
-          <div className="flex-1 rounded-xl border border-neutral-100 bg-neutral-50 py-3 text-center text-sm text-neutral-400 dark:border-neutral-800 dark:bg-neutral-800">
-            {reservation.status === "CANCELLED" ? "Already cancelled" : "Flight already departed"}
+          <div style={{ flex: 1, padding: '12px', borderRadius: 12, textAlign: 'center', background: '#f5f5f5', color: '#aaa', fontSize: 14, border: '1.5px solid #eee' }}>
+            {reservation.status === 'CANCELLED' ? 'Already cancelled' : 'Flight already departed'}
           </div>
         )}
       </div>
 
-      {/* Tickets panel */}
       {showTickets && (
-        <div className="flex flex-col gap-3">
-          {reservation.tickets.map((t) => (
-            <TicketCard key={t.id} ticket={t} />
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {reservation.tickets.map(t => <TicketCard key={t.id} ticket={t} />)}
         </div>
       )}
 
-      {/* Cancel confirmation modal */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-              Cancel this reservation?
-            </h2>
-            <p className="mt-2 text-sm text-neutral-500">
-              Flight{" "}
-              <span className="font-medium text-neutral-700 dark:text-neutral-300">
-                {reservation.flightNumber}
-              </span>{" "}
-              from {reservation.originCity} to {reservation.destinationCity} on{" "}
-              {formatDate(reservation.departureTime)} will be cancelled for all passengers. This
-              cannot be undone.
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: '1.5rem', maxWidth: 380, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
+            <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Cancel this reservation?</h2>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: '#666', lineHeight: 1.6 }}>
+              Flight <strong>{reservation.flightNumber}</strong> from {reservation.originCity} to {reservation.destinationCity} on {formatDate(reservation.departureTime)} will be cancelled for all passengers.
             </p>
-            <div className="mt-5 flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 rounded-xl border border-neutral-200 bg-neutral-50 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-              >
-                Keep booking
-              </button>
-              <button
-                onClick={async () => {
-                  setShowConfirm(false);
-                  await onCancel(reservation.id);
-                }}
-                disabled={cancelling}
-                className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
-              >
-                Yes, cancel
-              </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowConfirm(false)} style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1.5px solid #eee', background: 'white', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14 }}>Keep booking</button>
+              <button onClick={async () => { setShowConfirm(false); await onCancel(reservation.id); }} style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: '#e74c3c', color: 'white', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 600 }}>Yes, cancel</button>
             </div>
           </div>
         </div>
@@ -419,160 +267,136 @@ function ReservationDetail({
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
-
 export default function ReservationHistoryPage() {
-  const router = useRouter();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Reservation | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  useEffect(() => {
-    apiService
-      .getReservations()
-      .then((data: Reservation[]) => setReservations(data))
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  async function loadReservations(pageNum: number, append = false) {
+    try {
+      if (append) setLoadingMore(true); else setLoading(true);
+      const data = await apiService.getReservations(pageNum);
+      // Response is paginated: { content: [...], totalPages, ... }
+      const items: Reservation[] = data.content ?? data;
+      const pages: number = data.totalPages ?? 1;
+      setReservations(prev => append ? [...prev, ...items] : items);
+      setTotalPages(pages);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }
 
-  // Keep selected in sync after cancel
+  useEffect(() => { loadReservations(0); }, []);
+
   useEffect(() => {
     if (selected) {
-      const updated = reservations.find((r) => r.id === selected.id);
+      const updated = reservations.find(r => r.id === selected.id);
       if (updated) setSelected(updated);
     }
   }, [reservations]);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const handleCancel = async (id: string) => {
     setCancelling(true);
     try {
       const updated: Reservation = await apiService.cancelReservation(id);
-      setReservations((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status: updated.status } : r))
-      );
-      showToast("Reservation cancelled successfully");
+      setReservations(prev => prev.map(r => r.id === id ? { ...r, status: updated.status } : r));
+      showToast('Reservation cancelled successfully');
     } catch {
-      showToast("Something went wrong. Please try again.");
+      showToast('Something went wrong. Please try again.');
     } finally {
       setCancelling(false);
     }
   };
 
-  const upcoming = reservations.filter(
-    (r) => r.status !== "CANCELLED" && isFuture(r.departureTime)
-  );
-  const past = reservations.filter(
-    (r) => r.status !== "CANCELLED" && !isFuture(r.departureTime)
-  );
-  const cancelled = reservations.filter((r) => r.status === "CANCELLED");
+  const upcoming  = reservations.filter(r => r.status !== 'CANCELLED' && isFuture(r.departureTime));
+  const past      = reservations.filter(r => r.status !== 'CANCELLED' && !isFuture(r.departureTime));
+  const cancelled = reservations.filter(r => r.status === 'CANCELLED');
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <div className="mx-auto max-w-2xl px-4 py-10">
+    <div>
+      {!selected && (
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 32, marginBottom: 4 }}>Reservation history</h1>
+          <p style={{ color: '#666', fontSize: 14 }}>View and manage your flight bookings</p>
+        </div>
+      )}
 
-        {/* Page header — hidden when in detail view */}
-        {!selected && (
-          <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
-              Reservation history
-            </h1>
-            <p className="mt-1 text-sm text-neutral-500">
-              View and manage your flight bookings
-            </p>
-          </div>
-        )}
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '4rem', color: '#aaa' }}>
+          <p style={{ fontSize: 32, marginBottom: 8 }}>⏳</p>
+          <p>Loading your reservations…</p>
+        </div>
+      )}
 
-        {/* Loading */}
-        {loading && (
-          <div className="flex flex-col items-center gap-3 py-16 text-neutral-400">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
-            <p className="text-sm">Loading your reservations…</p>
-          </div>
-        )}
+      {error && !loading && (
+        <div style={{ padding: '12px 16px', borderRadius: 10, background: '#fff0f0', border: '1px solid #ffd0d0', color: '#c0392b', fontSize: 14 }}>
+          {error}
+        </div>
+      )}
 
-        {/* Error */}
-        {error && !loading && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
-            {error}
-          </div>
-        )}
+      {selected && !loading && (
+        <ReservationDetail reservation={selected} onBack={() => setSelected(null)} onCancel={handleCancel} cancelling={cancelling} />
+      )}
 
-        {/* Detail view */}
-        {selected && !loading && (
-          <ReservationDetail
-            reservation={selected}
-            onBack={() => setSelected(null)}
-            onCancel={handleCancel}
-            cancelling={cancelling}
-          />
-        )}
-
-        {/* List view */}
-        {!selected && !loading && !error && (
-          <div className="space-y-8">
-            {upcoming.length > 0 && (
-              <section>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Upcoming · {upcoming.length}
-                </h2>
-                <div className="space-y-3">
-                  {upcoming.map((r) => (
-                    <ReservationCard key={r.id} reservation={r} onClick={() => setSelected(r)} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {past.length > 0 && (
-              <section>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Past flights · {past.length}
-                </h2>
-                <div className="space-y-3 opacity-70">
-                  {past.map((r) => (
-                    <ReservationCard key={r.id} reservation={r} onClick={() => setSelected(r)} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {cancelled.length > 0 && (
-              <section>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Cancelled · {cancelled.length}
-                </h2>
-                <div className="space-y-3 opacity-60">
-                  {cancelled.map((r) => (
-                    <ReservationCard key={r.id} reservation={r} onClick={() => setSelected(r)} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {reservations.length === 0 && (
-              <div className="flex flex-col items-center gap-2 py-16 text-neutral-400">
-                <span className="text-4xl">✈️</span>
-                <p className="text-sm">No reservations found</p>
+      {!selected && !loading && !error && (
+        <div>
+          {upcoming.length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Upcoming · {upcoming.length}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {upcoming.map(r => <ReservationCard key={r.id} reservation={r} onClick={() => setSelected(r)} />)}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+          {past.length > 0 && (
+            <div style={{ marginBottom: 32, opacity: 0.8 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Past flights · {past.length}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {past.map(r => <ReservationCard key={r.id} reservation={r} onClick={() => setSelected(r)} />)}
+              </div>
+            </div>
+          )}
+          {cancelled.length > 0 && (
+            <div style={{ marginBottom: 32, opacity: 0.6 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Cancelled · {cancelled.length}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {cancelled.map(r => <ReservationCard key={r.id} reservation={r} onClick={() => setSelected(r)} />)}
+              </div>
+            </div>
+          )}
+          {page < totalPages - 1 && (
+            <div style={{ textAlign: 'center', marginTop: 8 }}>
+              <button onClick={() => { const next = page + 1; setPage(next); loadReservations(next, true); }} disabled={loadingMore}
+                style={{ padding: '10px 28px', borderRadius: 10, border: '1.5px solid #e5e5e5', background: 'white', cursor: loadingMore ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: 14, color: '#555' }}>
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          )}
+          {reservations.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '4rem', color: '#aaa' }}>
+              <p style={{ fontSize: 48 }}>✈️</p>
+              <p>No reservations found</p>
+            </div>
+          )}
+        </div>
+      )}
 
-        {/* Toast */}
-        {toast && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-xl border border-neutral-200 bg-white px-5 py-3 text-sm shadow-lg dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
-            {toast}
-          </div>
-        )}
-      </div>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#1a1a2e', color: 'white', padding: '10px 20px', borderRadius: 10, fontSize: 14, zIndex: 200 }}>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

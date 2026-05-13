@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Response DTO for the user-facing search flights API.
@@ -20,6 +21,7 @@ public class UserFlightSearchResponse {
     @Data
     @Builder
     public static class FlightDto {
+        private UUID id;
         private String flightNumber;
         private String aircraft;
         private DepartureDto departure;
