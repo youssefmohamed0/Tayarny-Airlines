@@ -1,7 +1,9 @@
 package alex.uni.flight_reservation_system.modules.flights.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +16,8 @@ import alex.uni.flight_reservation_system.common.enums.FlightStatus;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AdminFlightResponse {
 
     private UUID flightId;
@@ -28,6 +32,8 @@ public class AdminFlightResponse {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class DepartureDto {
         private String airport;   // IATA code
         private String terminal;
@@ -36,6 +42,8 @@ public class AdminFlightResponse {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class ArrivalDto {
         private String airport;   // IATA code
         private LocalDateTime time;
@@ -43,6 +51,8 @@ public class AdminFlightResponse {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class AdminFareOptionDto {
         private String fareName;
         private Double pricePerSeat;
