@@ -12,7 +12,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -84,8 +83,8 @@ class FlightSeatStatusServiceTest {
         when(flightSeatStatusRepository.findByFlightIdAndSeatIdsForUpdate(any(), any()))
                 .thenReturn(Collections.singletonList(status));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-                flightSeatStatusService.lockAndBookSeats(testFlight.getId(), Collections.singletonList(testSeat.getId())));
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> flightSeatStatusService
+                .lockAndBookSeats(testFlight.getId(), Collections.singletonList(testSeat.getId())));
 
         assertTrue(exception.getMessage().contains("was just booked"));
     }

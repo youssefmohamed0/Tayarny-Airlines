@@ -12,7 +12,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
-import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,7 +26,8 @@ class JwtServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         // Inject values normally provided by @Value
-        ReflectionTestUtils.setField(jwtService, "jwtSecret", "ThisIsAVeryLongSecretKeyUsedForTestingPurposesOnlyAndItMustBeAtLeast256Bits");
+        ReflectionTestUtils.setField(jwtService, "jwtSecret",
+                "ThisIsAVeryLongSecretKeyUsedForTestingPurposesOnlyAndItMustBeAtLeast256Bits");
         ReflectionTestUtils.setField(jwtService, "tokenExpirationMs", 3600000L); // 1 hour
 
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
@@ -70,10 +70,10 @@ class JwtServiceTest {
     @Test
     void testInvalidTokenWithDifferentUser() {
         String token = jwtService.generateToken(userDetails);
-        
+
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
         UserDetails differentUser = new User("otheruser", "password", Collections.singletonList(authority));
-        
+
         assertFalse(jwtService.isTokenValid(token, differentUser));
     }
 
@@ -81,7 +81,7 @@ class JwtServiceTest {
     void testExtractAllClaims() {
         String token = jwtService.generateToken(userDetails);
         Claims claims = jwtService.extractAllClaims(token);
-        
+
         assertNotNull(claims);
         assertEquals("testuser", claims.getSubject());
         assertEquals("ROLE_USER", claims.get("role"));

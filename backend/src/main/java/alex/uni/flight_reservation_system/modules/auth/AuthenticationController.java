@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import alex.uni.flight_reservation_system.modules.auth.dto.ApiResponse;
-import alex.uni.flight_reservation_system.modules.auth.dto.ApiResponse;
 import alex.uni.flight_reservation_system.modules.auth.dto.LoginRequest;
 import alex.uni.flight_reservation_system.modules.auth.dto.SignupRequest;
 import alex.uni.flight_reservation_system.modules.auth.dto.TokenRefreshRequest;

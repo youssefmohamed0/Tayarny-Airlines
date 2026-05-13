@@ -2,7 +2,6 @@ package alex.uni.flight_reservation_system.modules.seats.UserControllers;
 
 import alex.uni.flight_reservation_system.modules.seats.dto.SeatDto;
 import alex.uni.flight_reservation_system.modules.seats.services.SeatService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
