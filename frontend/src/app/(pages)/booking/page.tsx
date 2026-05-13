@@ -88,14 +88,41 @@ export default function BookingPage() {
     if (travelers[activeTravelerIdx]?.assignedSeat === seat.seatNum) return '#4B3BF5'
     return 'white'
   }
-  function handleContinue() {
+function handleContinue() {
+    const today = new Date().toISOString().split('T')[0]; // Gets YYYY-MM-DD
+
     for (let i = 0; i < travelers.length; i++) {
-      if (!travelers[i].fullName.trim()) { setError(`Passenger ${i + 1}: full name is required`); return }
-      if (!travelers[i].assignedSeat) { setError(`Passenger ${i + 1}: please select a seat`); return }
+      const t = travelers[i];
+      
+      // 1. Basic empty check
+      if (!t.fullName.trim()) { 
+        setError(`Passenger ${i + 1}: full name is required`); 
+        return; 
+      }
+
+      // 2. Future Date Validation
+      if (t.dateOfBirth && t.dateOfBirth > today) {
+        setError(`Passenger ${i + 1}: Date of birth cannot be in the future`);
+        return;
+      }
+
+      // 3. Passport Format (Optional: alphanumeric, 6-15 chars)
+      const passportRegex = /^[A-Z0-9]{6,15}$/i;
+      if (t.passportNumber && !passportRegex.test(t.passportNumber)) {
+        setError(`Passenger ${i + 1}: Please enter a valid passport number`);
+        return;
+      }
+
+      // 4. Seat check
+      if (!t.assignedSeat) { 
+        setError(`Passenger ${i + 1}: please select a seat`); 
+        return; 
+      }
     }
-    setError(null)
-    sessionStorage.setItem('travelers', JSON.stringify(travelers))
-    router.push('/payment')
+
+    setError(null);
+    sessionStorage.setItem('travelers', JSON.stringify(travelers));
+    router.push('/payment');
   }
 
   const seatsByRow: Record<string, Seat[]> = {}

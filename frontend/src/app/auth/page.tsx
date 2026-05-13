@@ -12,7 +12,20 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // --- Validation Logic ---
+  const validateEmail = (email: string) => {
+    return String(email)
+      .toLowerCase()
+      .match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  };
+
   async function handleLogin() {
+    // Client-side guard
+    if (!loginData.username || !loginData.password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     setLoading(true); setError('')
     try {
       const res = await signIn('credentials', {
@@ -31,6 +44,22 @@ export default function AuthPage() {
   }
 
   async function handleSignup() {
+    // Client-side guards
+    if (!signupData.fullName || !signupData.username || !signupData.email || !signupData.password) {
+      setError('All fields are required');
+      return;
+    }
+
+    if (!validateEmail(signupData.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (signupData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
     setLoading(true); setError('')
     try {
       const data = await apiService.signup(signupData.username, signupData.password, signupData.fullName, signupData.email)
@@ -44,9 +73,9 @@ export default function AuthPage() {
     } finally { setLoading(false) }
   }
 
+  // ... (rest of your return statement remains the same)
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'inherit' }}>
-
       {/* Left side (Branding) */}
       <div style={{
         flex: 1, background: 'linear-gradient(135deg, #4B3BF5 0%, #7c3aed 100%)',
