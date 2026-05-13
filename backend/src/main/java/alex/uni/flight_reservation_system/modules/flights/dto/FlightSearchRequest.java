@@ -6,9 +6,7 @@ import java.time.LocalDate;
 
 /**
  * DTO for user flight search parameters.
- * Used with @ModelAttribute to bind GET query parameters:
- *   GET /api/flights?origin=CAI&destination=LHR&departureDate=2026-10-30
- *       &returnDate=2026-11-25&travelers.adults=2&travelers.children=3&cabinClass=ECONOMY
+ * Used with @RequestBody to bind JSON payloads.
  */
 @Data
 public class FlightSearchRequest {

@@ -3,6 +3,8 @@ package alex.uni.flight_reservation_system.modules.flights.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import alex.uni.flight_reservation_system.common.enums.FlightStatus;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -21,8 +23,9 @@ public class UserFlightSearchResponse {
     @Data
     @Builder
     public static class FlightDto {
-        private UUID id;
         private String flightNumber;
+        private UUID id;
+        private FlightStatus status;
         private String aircraft;
         private DepartureDto departure;
         private ArrivalDto arrival;

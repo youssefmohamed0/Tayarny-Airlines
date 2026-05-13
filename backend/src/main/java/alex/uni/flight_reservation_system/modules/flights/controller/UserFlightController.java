@@ -25,15 +25,12 @@ public class UserFlightController {
 
     // ==========================================
     // 1. SEARCH FLIGHTS
-    // GET /api/flights?origin=CAI&destination=LHR&departureDate=2026-10-30
-    // &returnDate=2026-11-25&travelers.adults=2&travelers.children=3&cabinClass=ECONOMY
-    //
-    // Uses @ModelAttribute to bind flattened query parameters to a nested DTO.
-    // This avoids the REST anti-pattern of sending a JSON body on a GET request.
+    // GET /api/flights
+    // Uses @RequestBody to accept JSON search parameters.
     // ==========================================
     @GetMapping
     public ResponseEntity<UserFlightSearchResponse> searchFlights(
-            @ModelAttribute FlightSearchRequest request) {
+            @RequestBody FlightSearchRequest request) {
         UserFlightSearchResponse response = flightService.searchUserFlights(request);
         return ResponseEntity.ok(response);
     }
