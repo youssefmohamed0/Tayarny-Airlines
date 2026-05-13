@@ -21,6 +21,8 @@ interface Traveler {
 
 export default function BookingPage() {
   const router = useRouter()
+  
+  // State Management
   const [flight, setFlight] = useState<any>(null)
   const [fare, setFare] = useState<any>(null)
   const [params, setParams] = useState<any>(null)
@@ -31,36 +33,61 @@ export default function BookingPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log("--- Booking Page Initialized ---")
+    
     const f = sessionStorage.getItem('selectedFlight')
     const fa = sessionStorage.getItem('selectedFare')
     const p = sessionStorage.getItem('searchParams')
-    if (!f || !fa || !p) { router.push('/search'); return }
+
+    if (!f || !fa || !p) {
+      console.error("Missing data in sessionStorage. Redirecting to search...")
+      router.push('/search')
+      return
+    }
 
     const parsedFlight = JSON.parse(f)
     const parsedFare = JSON.parse(fa)
     const parsedParams = JSON.parse(p)
 
+    console.log("Flight ID detected:", parsedFlight.flightId)
+    
     setFlight(parsedFlight)
     setFare(parsedFare)
     setParams(parsedParams)
 
-    // Build traveler slots
+    // Build traveler slots based on search params
     const slots: Traveler[] = [
-      ...Array(parsedParams.adults).fill(null).map(() => ({ type: 'ADULT' as const, fullName: '', passportNumber: '', dateOfBirth: '', assignedSeat: '' })),
-      ...Array(parsedParams.children).fill(null).map(() => ({ type: 'CHILD' as const, fullName: '', passportNumber: '', dateOfBirth: '', assignedSeat: '' })),
+      ...Array(parsedParams.adults || 0).fill(null).map(() => ({ 
+        type: 'ADULT' as const, fullName: '', passportNumber: '', dateOfBirth: '', assignedSeat: '' 
+      })),
+      ...Array(parsedParams.children || 0).fill(null).map(() => ({ 
+        type: 'CHILD' as const, fullName: '', passportNumber: '', dateOfBirth: '', assignedSeat: '' 
+      })),
     ]
     setTravelers(slots)
 
-    // Fetch seats
+    // Fetch Seats from API
     if (parsedFlight.flightId) {
+      setLoadingSeats(true)
+      console.log("Fetching seats for flight:", parsedFlight.flightId)
+      
       apiService.getSeatsByFlight(parsedFlight.flightId)
-        .then(setSeats)
-        .catch(() => setSeats([]))
-        .finally(() => setLoadingSeats(false))
-    } else {
-      setLoadingSeats(false)
+        .then(data => {
+          console.log("API Success! Seats received:", data)
+          setSeats(Array.isArray(data) ? data : [])
+        })
+        .catch(err => {
+          console.error("API Error during seat fetch:", err)
+          setSeats([])
+        })
+        .finally(() => {
+          console.log("Seat loading finished.")
+          setLoadingSeats(false)
+        })
     }
-  }, [])
+  }, [router])
+
+  // --- Logic Helpers ---
 
   function updateTraveler(idx: number, field: keyof Traveler, value: string) {
     setTravelers(prev => prev.map((t, i) => i === idx ? { ...t, [field]: value } : t))
@@ -75,177 +102,129 @@ export default function BookingPage() {
   function getSeatColor(seat: Seat) {
     const assignedByOther = travelers.some((t, i) => t.assignedSeat === seat.seatNum && i !== activeTravelerIdx)
     const assignedByActive = travelers[activeTravelerIdx]?.assignedSeat === seat.seatNum
+    
     if (seat.status === 'TAKEN') return '#e0e0e0'
     if (assignedByOther) return '#f97316'
     if (assignedByActive) return '#378ADD'
     return 'white'
   }
 
-  function validate() {
-    for (let i = 0; i < travelers.length; i++) {
-      const t = travelers[i]
-      if (!t.fullName.trim()) return `Traveler ${i + 1}: full name is required`
-      if (t.type === 'ADULT' && !t.passportNumber.trim()) return `Traveler ${i + 1}: passport number is required`
-      if (!t.assignedSeat) return `Traveler ${i + 1}: please select a seat`
-    }
-    return null
-  }
-
   function handleContinue() {
-    const err = validate()
-    if (err) { setError(err); return }
+    // Basic validation
+    for (let i = 0; i < travelers.length; i++) {
+      if (!travelers[i].fullName || !travelers[i].assignedSeat) {
+        setError(`Please complete info and select a seat for Traveler ${i + 1}`)
+        return
+      }
+    }
     setError(null)
     sessionStorage.setItem('travelers', JSON.stringify(travelers))
     router.push('/payment')
   }
 
-  // Group seats by row for display
+  // --- Grouping Logic for UI ---
   const seatsByRow: Record<string, Seat[]> = {}
   seats.forEach(s => {
-    const row = s.seatNum.replace(/[A-Z]/g, '')
-    if (!seatsByRow[row]) seatsByRow[row] = []
-    seatsByRow[row].push(s)
+    if (s.seatNum) {
+      const row = s.seatNum.replace(/[A-Z]/g, '')
+      if (!seatsByRow[row]) seatsByRow[row] = []
+      seatsByRow[row].push(s)
+    }
   })
   const rows = Object.keys(seatsByRow).sort((a, b) => Number(a) - Number(b))
 
-  if (!flight || !fare) return null
+  // Render check
+  if (!flight || !fare) {
+    return <div style={{ padding: 40 }}>Loading session data...</div>
+  }
 
   return (
-    <div>
-      <button onClick={() => router.back()}
-        style={{ background: 'none', border: 'none', color: '#378ADD', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit', marginBottom: 16, padding: 0 }}>
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+      <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: '#378ADD', cursor: 'pointer', marginBottom: 16 }}>
         ← Back to results
       </button>
 
       <h1 style={{ fontSize: 28, marginBottom: 4 }}>Passenger details</h1>
-      <p style={{ color: '#666', fontSize: 14, marginBottom: 24 }}>
-        {flight.flightNumber} · {flight.departure.airport} → {flight.arrival.airport} · {fare.fareName}
+      <p style={{ color: '#666', marginBottom: 24 }}>
+        {flight.flightNumber} · {flight.departure?.airport} → {flight.arrival?.airport}
       </p>
 
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-
-        {/* Left: Passenger forms */}
-        <div style={{ flex: 1, minWidth: 300 }}>
-
-          {/* Traveler tabs */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 30, flexWrap: 'wrap' }}>
+        
+        {/* Left Column: Form */}
+        <div style={{ flex: 1, minWidth: '320px' }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
             {travelers.map((t, i) => (
-              <button key={i} onClick={() => setActiveTravelerIdx(i)}
+              <button 
+                key={i} 
+                onClick={() => setActiveTravelerIdx(i)}
                 style={{
-                  padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  fontFamily: 'inherit', fontSize: 13, fontWeight: 500,
+                  padding: '10px 15px', borderRadius: 8, border: 'none',
                   background: activeTravelerIdx === i ? '#1a1a2e' : '#f0f0f0',
                   color: activeTravelerIdx === i ? 'white' : '#555',
-                  transition: 'all 0.15s'
-                }}>
-                {t.type === 'ADULT' ? '👤' : '👶'} {t.type} {i + 1}
-                {t.assignedSeat && <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.8 }}>· {t.assignedSeat}</span>}
+                  cursor: 'pointer'
+                }}
+              >
+                T{i + 1} {t.assignedSeat ? `(${t.assignedSeat})` : ''}
               </button>
             ))}
           </div>
 
-          {/* Active traveler form */}
-          {travelers[activeTravelerIdx] && (
-            <div style={{ background: 'white', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
-              <h3 style={{ fontSize: 16, marginBottom: 16, color: '#1a1a2e' }}>
-                {travelers[activeTravelerIdx].type === 'ADULT' ? '👤' : '👶'} {travelers[activeTravelerIdx].type} {activeTravelerIdx + 1}
-              </h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label style={{ fontSize: 12, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full name *</label>
-                  <input value={travelers[activeTravelerIdx].fullName}
-                    onChange={e => updateTraveler(activeTravelerIdx, 'fullName', e.target.value)}
-                    placeholder="As on passport"
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                </div>
-
-                {travelers[activeTravelerIdx].type === 'ADULT' && (
-                  <div>
-                    <label style={{ fontSize: 12, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Passport number *</label>
-                    <input value={travelers[activeTravelerIdx].passportNumber}
-                      onChange={e => updateTraveler(activeTravelerIdx, 'passportNumber', e.target.value)}
-                      placeholder="e.g. A12345678"
-                      style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                  </div>
-                )}
-
-                <div>
-                  <label style={{ fontSize: 12, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date of birth</label>
-                  <input type="date" value={travelers[activeTravelerIdx].dateOfBirth}
-                    onChange={e => updateTraveler(activeTravelerIdx, 'dateOfBirth', e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: 12, color: '#999', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Assigned seat {travelers[activeTravelerIdx].assignedSeat ? `· ${travelers[activeTravelerIdx].assignedSeat}` : '(select from map →)'}
-                  </label>
-                </div>
-              </div>
+          <div style={{ background: 'white', padding: 24, borderRadius: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ marginTop: 0 }}>Traveler {activeTravelerIdx + 1} ({travelers[activeTravelerIdx]?.type})</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+              <input 
+                placeholder="Full Name" 
+                value={travelers[activeTravelerIdx]?.fullName || ''} 
+                onChange={(e) => updateTraveler(activeTravelerIdx, 'fullName', e.target.value)}
+                style={{ padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+              />
+              <input 
+                placeholder="Passport Number" 
+                value={travelers[activeTravelerIdx]?.passportNumber || ''} 
+                onChange={(e) => updateTraveler(activeTravelerIdx, 'passportNumber', e.target.value)}
+                style={{ padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+              />
             </div>
-          )}
+          </div>
 
-          {error && (
-            <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 10, background: '#fff0f0', border: '1px solid #ffd0d0', color: '#c0392b', fontSize: 14 }}>
-              {error}
-            </div>
-          )}
+          {error && <p style={{ color: 'red', marginTop: 15 }}>{error}</p>}
 
-          <button onClick={handleContinue}
-            style={{
-              marginTop: 20, width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-              background: '#378ADD', color: 'white', fontSize: 16, fontWeight: 600,
-              cursor: 'pointer', fontFamily: 'inherit'
-            }}>
-            Continue to payment →
+          <button onClick={handleContinue} style={{ 
+            marginTop: 24, width: '100%', padding: 16, background: '#378ADD', color: 'white', 
+            border: 'none', borderRadius: 12, fontWeight: 'bold', cursor: 'pointer' 
+          }}>
+            Continue to Payment
           </button>
         </div>
 
-        {/* Right: Seat map */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', minWidth: 280 }}>
-          <h3 style={{ fontSize: 16, marginBottom: 4, color: '#1a1a2e' }}>Seat map</h3>
-          <p style={{ fontSize: 13, color: '#999', marginBottom: 16 }}>
-            Selecting for: {travelers[activeTravelerIdx]?.type} {activeTravelerIdx + 1}
-          </p>
-
-          {/* Legend */}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-            {[
-              { color: 'white', border: '1px solid #ddd', label: 'Available' },
-              { color: '#378ADD', label: 'Yours' },
-              { color: '#f97316', label: 'Other' },
-              { color: '#e0e0e0', label: 'Taken' },
-            ].map(item => (
-              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 16, height: 16, borderRadius: 4, background: item.color, border: (item as any).border ?? 'none' }} />
-                <span style={{ fontSize: 11, color: '#666' }}>{item.label}</span>
-              </div>
-            ))}
-          </div>
-
+        {/* Right Column: Seat Map */}
+        <div style={{ flex: 1, background: '#fff', padding: 24, borderRadius: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', minWidth: '320px' }}>
+          <h3 style={{ marginTop: 0 }}>Select Seat</h3>
+          
           {loadingSeats ? (
-            <p style={{ color: '#999', fontSize: 14 }}>Loading seats…</p>
-          ) : seats.length === 0 ? (
-            <p style={{ color: '#999', fontSize: 14 }}>No seat map available. Enter seat manually above.</p>
+            <div style={{ padding: '40px 0', textAlign: 'center' }}>
+              <p>Loading aircraft configuration...</p>
+            </div>
+          ) : rows.length === 0 ? (
+            <p style={{ color: '#999' }}>No seats found. Please check API connection.</p>
           ) : (
-            <div style={{ overflowY: 'auto', maxHeight: 400 }}>
-              <div style={{ textAlign: 'center', marginBottom: 8, fontSize: 20 }}>✈️</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ fontSize: '24px', marginBottom: 20 }}>✈️</div>
               {rows.map(row => (
-                <div key={row} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 11, color: '#bbb', width: 20, textAlign: 'center' }}>{row}</span>
+                <div key={row} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                  <span style={{ width: 20, fontSize: 12, color: '#ccc' }}>{row}</span>
                   {seatsByRow[row].map(seat => (
-                    <button key={seat.id}
+                    <button
+                      key={seat.id}
                       onClick={() => seat.status !== 'TAKEN' && assignSeat(seat.seatNum)}
                       style={{
-                        width: 38, height: 38, borderRadius: 8, border: 'none',
+                        width: 40, height: 40, borderRadius: 6, border: '1px solid #eee',
                         background: getSeatColor(seat),
-                        boxShadow: seat.status !== 'TAKEN' ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
                         cursor: seat.status === 'TAKEN' ? 'not-allowed' : 'pointer',
-                        fontSize: 10, fontWeight: 500, fontFamily: 'inherit',
-                        color: travelers[activeTravelerIdx]?.assignedSeat === seat.seatNum ? 'white' : '#555',
-                        transition: 'all 0.1s'
-                      }}>
+                        fontWeight: 'bold', fontSize: 11
+                      }}
+                    >
                       {seat.seatNum}
                     </button>
                   ))}
