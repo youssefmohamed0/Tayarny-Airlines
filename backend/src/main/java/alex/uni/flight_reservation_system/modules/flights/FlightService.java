@@ -167,9 +167,8 @@ public class FlightService {
                 .collect(Collectors.toList());
 
         return UserFlightSearchResponse.FlightDto.builder()
-                .flightNumber(flight.getFlightNumber())
                 .id(flight.getId())
-                .status(flight.getStatus())
+                .flightNumber(flight.getFlightNumber())
                 .aircraft(flight.getAirplane().getModel().getModelName())
                 .departure(UserFlightSearchResponse.DepartureDto.builder()
                         .airport(flight.getOriginAirport().getIataCode())
