@@ -25,9 +25,12 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     { label: '👤 Profile', path: '/profile' },
   ]
 
-  if (pathname === '/auth') {
-    return <>{children}</>
-  }
+  // Hide nav on auth and booking flow pages
+  const hideNav = ['/auth', '/results', '/booking', '/payment', '/confirmation'].some(p =>
+    pathname === p || pathname.startsWith(p + '/')
+  )
+
+  if (hideNav) return <>{children}</>
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'inherit' }}>

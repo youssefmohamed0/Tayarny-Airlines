@@ -111,22 +111,27 @@ class ApiService {
 
   // ── Flights ─────────────────────────────────────────
 
-  async searchFlights(params: {
-    origin: string
-    destination: string
-    departureDate: string
-    travelers: { adults: number; children: number }
-    cabinClass: string
-  }) {
-    const headers = await this.#getHeaders()
-    const res = await fetch(`${this.#baseUrl}/api/flights`, {
-      method: 'GET',
-      headers,
-      body: JSON.stringify(params),
-    })
-    if (!res.ok) throw new Error(`Failed to search flights: ${res.status}`)
-    return res.json()
-  }
+  // GET /api/flights with query params (GET with body is blocked by browsers)
+// ── Updated Flights Service ─────────────────────────
+
+async searchFlights(params: {
+  origin: string
+  destination: string
+  departureDate: string
+  travelers: { adults: number; children: number }
+  cabinClass: string
+}) {
+  const headers = await this.#getHeaders()
+  
+  const res = await fetch(`${this.#baseUrl}/api/flights`, {
+    method: 'POST', // Changed from GET to POST to allow a body
+    headers,
+    body: JSON.stringify(params), // This sends the { "origin": "LHR", ... } object
+  })
+
+  if (!res.ok) throw new Error(`Failed to search flights: ${res.status}`)
+  return res.json()
+}
 
   // ── Seats ───────────────────────────────────────────
 
@@ -146,6 +151,7 @@ class ApiService {
 
   // ── Checkout ────────────────────────────────────────
 
+  // POST /api/checkout — no priceToken needed
   async checkout(payload: {
     flightNumber: string
     fareClass: string
@@ -156,7 +162,6 @@ class ApiService {
       dateOfBirth?: string
       assignedSeat: string
     }[]
-    priceToken: string
     creditCardNumber: string
     cardExpiryDate: string
   }) {
@@ -174,8 +179,8 @@ class ApiService {
   }
 
   // ── Reservations ────────────────────────────────────
-  // API returns paginated response: { content: [...], totalPages, totalElements, ... }
 
+  // GET /api/user/reservations?page=0&size=10 — paginated response
   async getReservations(page = 0, size = 10) {
     const headers = await this.#getHeaders()
     const res = await fetch(
@@ -202,7 +207,7 @@ class ApiService {
 
   async cancelReservation(id: string) {
     const headers = await this.#getHeaders()
-    const res = await fetch(`${this.#baseUrl}/api/user/reservations/${id}/cancel`, { method: 'PUT', headers })
+    const res = await fetch(`${this.#baseUrl}/api/user/reservation/${id}/cancel`, { method: 'PUT', headers })
     if (!res.ok) throw new Error(`Failed to cancel reservation: ${res.status}`)
     return res.json()
   }
