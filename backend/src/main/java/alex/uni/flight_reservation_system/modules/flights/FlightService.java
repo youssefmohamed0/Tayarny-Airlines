@@ -153,6 +153,7 @@ public class FlightService {
 
                     return UserFlightSearchResponse.UserFareOptionDto.builder()
                             .fareName(fare.getFareName())
+                            .cabinClass(fare.getCabinClass())
                             .totalPrice(totalPrice)
                             .priceBreakdown(UserFlightSearchResponse.PriceBreakdownDto.builder()
                                     .adult(UserFlightSearchResponse.PassengerPriceDto.builder()

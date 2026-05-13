@@ -21,7 +21,7 @@ interface Traveler {
 
 function isSeatTaken(seat: Seat) {
   const s = seat.status?.toUpperCase()
-  return s === 'TAKEN' || s === 'BOOKED' || s === 'OCCUPIED' || s === 'RESERVED'
+  return s === 'TAKEN' || s === 'BOOKED' || s === 'OCCUPIED' || s === 'RESERVED' || s === 'LOCKED'
 }
 
 export default function BookingPage() {
@@ -47,17 +47,32 @@ export default function BookingPage() {
       ...Array(parsedParams.children || 0).fill(null).map(() => ({ type: 'CHILD' as const, fullName: '', passportNumber: '', dateOfBirth: '', assignedSeat: '' })),
     ]
     setTravelers(slots)
+
+    async function fetchSeats() {
+      try {
+        const data = await apiService.getSeatsByFlight(parsedFlight.flightId)
+        const allSeats: Seat[] = Array.isArray(data) ? data : []
+        const cabinClass = parsedFare.cabinClass ?? (
+          parsedFare.fareName?.toUpperCase().includes('FIRST') ? 'FIRST_CLASS' :
+          parsedFare.fareName?.toUpperCase().includes('BUSINESS') ? 'BUSINESS' :
+          'ECONOMY'
+        )
+        const filtered = allSeats.filter(s => s.seatClass?.toUpperCase() === cabinClass.toUpperCase())
+        setSeats(filtered.length > 0 ? filtered : allSeats)
+      } catch (err) {
+        console.error('Failed to fetch seats:', err)
+      } finally {
+        setLoadingSeats(false)
+      }
+    }
+
     if (parsedFlight.flightId) {
-      apiService.getSeatsByFlight(parsedFlight.flightId)
-        .then(data => {
-          const allSeats: Seat[] = Array.isArray(data) ? data : []
-          const cabinClass = parsedFare.cabinClass ?? (parsedFare.fareName?.toUpperCase().includes('BUSINESS') ? 'BUSINESS' : 'ECONOMY')
-          const filtered = allSeats.filter(s => s.seatClass?.toUpperCase() === cabinClass.toUpperCase())
-          setSeats(filtered.length > 0 ? filtered : allSeats)
-        })
-        .catch(() => setSeats([]))
-        .finally(() => setLoadingSeats(false))
-    } else { setLoadingSeats(false) }
+      fetchSeats()
+      const interval = setInterval(fetchSeats, 5000) // Poll every 5 seconds
+      return () => clearInterval(interval)
+    } else {
+      setLoadingSeats(false)
+    }
   }, [router])
 
   function updateTraveler(idx: number, field: keyof Traveler, value: string) {

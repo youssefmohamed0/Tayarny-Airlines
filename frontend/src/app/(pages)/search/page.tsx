@@ -199,7 +199,7 @@ export default function SearchPage() {
           <div style={{ flex: 1, minWidth: 160 }}>
             <label className="field-label">Cabin class</label>
             <select value={cabinClass} onChange={e => setCabinClass(e.target.value)} className="input" style={{ appearance: 'auto' }}>
-              {['ECONOMY', 'BUSINESS', 'FIRST'].map(c => <option key={c} value={c}>{c.charAt(0) + c.slice(1).toLowerCase()}</option>)}
+              {['ECONOMY', 'BUSINESS', 'FIRST_CLASS'].map(c => <option key={c} value={c}>{c === 'FIRST_CLASS' ? 'First Class' : c.charAt(0) + c.slice(1).toLowerCase()}</option>)}
             </select>
           </div>
         </div>

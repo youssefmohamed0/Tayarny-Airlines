@@ -51,6 +51,7 @@ public class UserFlightSearchResponse {
     @Builder
     public static class UserFareOptionDto {
         private String fareName;
+        private String cabinClass;
         private Double totalPrice;     // Computed: (adults * pricePerAdult) + (children * pricePerChild)
         private PriceBreakdownDto priceBreakdown;
         private List<String> benefits;
