@@ -27,7 +27,8 @@ export default function UserReservationsPage() {
   const [error, setError] = useState('')
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
-  const [cancelling, setCancelling] = useState<string | null>(null)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [searchQuery, setSearchQuery] = useState(usernameParam || '')
 
   useEffect(() => { loadReservations() }, [page, usernameParam])
@@ -54,16 +55,17 @@ export default function UserReservationsPage() {
     }
   }
 
-  async function handleCancelReservation(reservationId: string) {
-    if (!confirm('Are you sure you want to cancel this booking? This action is permanent.')) return
-    setCancelling(reservationId)
+  async function handleCancelReservation() {
+    if (!cancellingId) return
+    setIsProcessing(true)
     try {
-      await apiService.cancelReservationAdmin(reservationId)
-      setReservations(prev => prev.map(r => r.id === reservationId ? { ...r, status: 'CANCELLED' } : r))
+      await apiService.cancelReservationAdmin(cancellingId)
+      setReservations(prev => prev.map(r => r.id === cancellingId ? { ...r, status: 'CANCELLED' } : r))
+      setCancellingId(null)
     } catch (e: any) {
       alert(e.message || 'Failed to cancel reservation')
     } finally {
-      setCancelling(null)
+      setIsProcessing(false)
     }
   }
 
@@ -140,10 +142,9 @@ export default function UserReservationsPage() {
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                   {res.status !== 'CANCELLED' && (
-                    <button onClick={(e) => { e.stopPropagation(); handleCancelReservation(res.id); }}
-                      disabled={cancelling === res.id}
+                    <button onClick={(e) => { e.stopPropagation(); setCancellingId(res.id); }}
                       className="btn btn-ghost btn-sm" style={{ color: '#ef4444', borderColor: '#fee2e2' }}>
-                      {cancelling === res.id ? '...' : 'Void'}
+                      Cancel
                     </button>
                   )}
                   <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#f4f4fb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4B3BF5', fontSize: 14 }}>
@@ -168,6 +169,25 @@ export default function UserReservationsPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {cancellingId && (
+        <div className="modal-overlay" onClick={() => setCancellingId(null)}>
+          <div className="modal-content animate-in" style={{ maxWidth: 420, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, margin: '0 auto 20px' }}>⚠️</div>
+            <h3 style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: '0 0 12px' }}>Cancel Booking?</h3>
+            <p style={{ color: '#6b7280', fontSize: 15, lineHeight: 1.6, margin: '0 0 28px' }}>
+              Are you sure you want to cancel this flight reservation? This will release all seats and cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setCancellingId(null)} className="btn btn-outline" style={{ flex: 1 }}>Keep Booking</button>
+              <button onClick={handleCancelReservation} disabled={isProcessing} className="btn btn-danger" style={{ flex: 1 }}>
+                {isProcessing ? 'Processing...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

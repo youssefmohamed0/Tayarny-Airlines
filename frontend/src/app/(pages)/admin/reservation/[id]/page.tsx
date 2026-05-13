@@ -23,7 +23,8 @@ export default function ReservationDetailPage() {
   const [reservation, setReservation] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [cancelling, setCancelling] = useState<string | null>(null)
+  const [cancellingTicketId, setCancellingTicketId] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => { if (id) loadReservation() }, [id])
 
@@ -41,19 +42,20 @@ export default function ReservationDetailPage() {
     }
   }
 
-  async function handleCancelTicket(ticketId: string) {
-    if (!confirm('Are you sure you want to cancel this passenger ticket?')) return
-    setCancelling(ticketId)
+  async function handleCancelTicket() {
+    if (!cancellingTicketId) return
+    setIsProcessing(true)
     try {
-      await apiService.cancelTicket(ticketId)
+      await apiService.cancelTicket(cancellingTicketId)
       setReservation((prev: any) => ({
         ...prev,
-        tickets: prev.tickets.map((t: any) => t.id === ticketId ? { ...t, status: 'CANCELLED' } : t)
+        tickets: prev.tickets.map((t: any) => t.id === cancellingTicketId ? { ...t, status: 'CANCELLED' } : t)
       }))
+      setCancellingTicketId(null)
     } catch (e: any) {
       alert(e.message || 'Failed to cancel ticket')
     } finally {
-      setCancelling(null)
+      setIsProcessing(false)
     }
   }
 
@@ -170,15 +172,34 @@ export default function ReservationDetailPage() {
             </div>
 
             {ticket.status !== 'CANCELLED' && (
-              <button onClick={() => handleCancelTicket(ticket.id)} disabled={cancelling === ticket.id}
-                style={{ padding: '8px 16px', borderRadius: 8, border: '1.5px solid #fee2e2', background: 'white', color: '#ef4444', fontSize: 13, fontWeight: 700, cursor: cancelling === ticket.id ? 'not-allowed' : 'pointer', transition: 'all 0.15s' }}
+              <button onClick={() => setCancellingTicketId(ticket.id)}
+                style={{ padding: '8px 16px', borderRadius: 8, border: '1.5px solid #fee2e2', background: 'white', color: '#ef4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'} onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-                {cancelling === ticket.id ? 'Processing...' : 'Void Ticket'}
+                Cancel Ticket
               </button>
             )}
           </div>
         ))}
       </div>
+
+      {/* Styled Confirmation Modal */}
+      {cancellingTicketId && (
+        <div className="modal-overlay" onClick={() => setCancellingTicketId(null)}>
+          <div className="modal-content animate-in" style={{ maxWidth: 420, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, margin: '0 auto 20px' }}>⚠️</div>
+            <h3 style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: '0 0 12px' }}>Cancel Ticket?</h3>
+            <p style={{ color: '#6b7280', fontSize: 15, lineHeight: 1.6, margin: '0 0 28px' }}>
+              Are you sure you want to cancel this passenger ticket? This action will void the ticket and cannot be reversed.
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setCancellingTicketId(null)} className="btn btn-outline" style={{ flex: 1 }}>Keep Ticket</button>
+              <button onClick={handleCancelTicket} disabled={isProcessing} className="btn btn-danger" style={{ flex: 1 }}>
+                {isProcessing ? 'Processing...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

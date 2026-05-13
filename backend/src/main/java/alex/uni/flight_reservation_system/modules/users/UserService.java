@@ -86,6 +86,7 @@ public class UserService {
         List<User> users = userRepository.findAll();
         List<AdminUsersResponse> adminUsersResponses = new ArrayList<>();
         for (User user : users) {
+            if (user.getRole().toString().equals("ADMIN")) continue;
             adminUsersResponses.add(AdminUsersResponse.builder()
                     .id(user.getId())
                     .username(user.getUsername())

@@ -19,7 +19,7 @@ type Flight = {
   fareOptions: FareOption[]
 }
 
-type Modal = 'none' | 'add' | 'edit' | 'users'
+type Modal = 'none' | 'add' | 'edit' | 'users' | 'confirmDelete'
 
 const emptyFlight: Flight = {
   flightNumber: '',
@@ -41,6 +41,8 @@ export default function AdminPage() {
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [pendingDeleteType, setPendingDeleteType] = useState<'flight' | 'user' | null>(null)
 
   useEffect(() => { loadFlights() }, [])
 
@@ -95,10 +97,37 @@ export default function AdminPage() {
     }
   }
 
-  async function handleDeleteFlight(flightId: string) {
-    if (!confirm('Are you sure you want to delete this flight route?')) return
-    const ok = await apiService.deleteFlight(flightId)
-    if (ok) setFlights(prev => prev.filter(f => f.flightId !== flightId))
+  function requestDeleteFlight(id: string) {
+    setPendingDeleteId(id)
+    setPendingDeleteType('flight')
+    setModal('confirmDelete')
+  }
+
+  function requestDeleteUser(id: string) {
+    setPendingDeleteId(id)
+    setPendingDeleteType('user')
+    setModal('confirmDelete')
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId || !pendingDeleteType) return
+    setSaving(true)
+    try {
+      if (pendingDeleteType === 'flight') {
+        await apiService.deleteFlight(pendingDeleteId)
+        setFlights(prev => prev.filter(f => f.flightId !== pendingDeleteId))
+      } else {
+        await apiService.deleteUser(pendingDeleteId)
+        setUsers(prev => prev.filter(u => u.id !== pendingDeleteId))
+      }
+      setModal(pendingDeleteType === 'user' ? 'users' : 'none')
+    } catch (e: any) {
+      setError(e.message || 'Deletion failed.')
+    } finally {
+      setSaving(false)
+      setPendingDeleteId(null)
+      setPendingDeleteType(null)
+    }
   }
 
   async function openUsers() {
@@ -112,13 +141,6 @@ export default function AdminPage() {
     } finally {
       setLoadingUsers(false)
     }
-  }
-
-  async function handleDeleteUser(userId: string, role: string) {
-    if (role === 'ADMIN') return
-    if (!confirm('Are you sure you want to delete this user?')) return
-    const ok = await apiService.deleteUser(userId)
-    if (ok) setUsers(prev => prev.filter(u => u.id !== userId))
   }
 
   const now = new Date()
@@ -164,7 +186,7 @@ export default function AdminPage() {
         }}>
           <div style={{ background: '#eeeaff', width: 56, height: 56, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#4B3BF5' }}>👥</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 4 }}>Manage Users</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 4 }}>Manage Customers</div>
             <div style={{ fontSize: 14, color: '#6b7280' }}>View directory and booking history</div>
           </div>
         </button>
@@ -176,11 +198,12 @@ export default function AdminPage() {
           <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0 }}>Active Routes</h2>
           <div style={{ display: 'flex', gap: 10 }}>
             <input 
-              placeholder="Search flight #..." 
+              placeholder="Search flight # (e.g. AF)..." 
               value={searchFlightNumber}
               onChange={e => setSearchFlightNumber(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && loadFlights(searchFlightNumber || undefined)}
               className="input"
-              style={{ width: 200, padding: '9px 12px', fontSize: 13 }} 
+              style={{ width: 220, padding: '9px 12px', fontSize: 13 }} 
             />
             <button 
               onClick={() => loadFlights(searchFlightNumber || undefined)} 
@@ -230,7 +253,7 @@ export default function AdminPage() {
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={() => openEdit(flight)} className="btn btn-outline btn-sm">Edit</button>
-                    <button onClick={() => flight.flightId && handleDeleteFlight(flight.flightId)} className="btn btn-ghost btn-sm" style={{ color: '#ef4444', borderColor: '#fee2e2' }}>🗑️</button>
+                    <button onClick={() => flight.flightId && requestDeleteFlight(flight.flightId)} className="btn btn-ghost btn-sm" style={{ color: '#ef4444', borderColor: '#fee2e2' }}>🗑️</button>
                   </div>
                 </div>
               ))}
@@ -317,12 +340,12 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* View All Users Modal */}
+      {/* View Customers Modal */}
       {modal === 'users' && (
         <div className="modal-overlay" onClick={() => setModal('none')}>
           <div className="modal-content animate-in" style={{ maxWidth: 720, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div style={{ padding: '0 0 20px', borderBottom: '1px solid #f4f4fb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>User Directory</h3>
+              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Customer Directory</h3>
               <button onClick={() => setModal('none')} style={{ background: 'none', border: 'none', fontSize: 28, cursor: 'pointer', color: '#9ca3af' }}>×</button>
             </div>
             
@@ -339,7 +362,7 @@ export default function AdminPage() {
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                           <span style={{ fontWeight: 800, color: '#111827', fontSize: 16 }}>{user.fullName}</span>
-                          <span className={`badge ${user.role === 'ADMIN' ? 'badge-danger' : 'badge-primary'}`} style={{ fontSize: 10 }}>{user.role}</span>
+                          <span className="badge badge-primary" style={{ fontSize: 10 }}>CUSTOMER</span>
                         </div>
                         <div style={{ fontSize: 13, color: '#6b7280' }}>
                           @{user.username} • {user.email} • <strong style={{ color: '#4B3BF5' }}>{user.totalFlights}</strong> total flights
@@ -349,16 +372,33 @@ export default function AdminPage() {
                         <button onClick={() => { setModal('none'); router.push(`/admin/reservations?username=${user.username}`) }} className="btn btn-outline btn-sm">
                           View Bookings
                         </button>
-                        {user.role === 'CUSTOMER' && (
-                          <button onClick={() => handleDeleteUser(user.id, user.role)} className="btn btn-ghost btn-sm" style={{ color: '#ef4444', borderColor: '#fee2e2' }}>
-                            Delete
-                          </button>
-                        )}
+                        <button onClick={() => requestDeleteUser(user.id)} className="btn btn-ghost btn-sm" style={{ color: '#ef4444', borderColor: '#fee2e2' }}>
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Styled Confirmation Modal */}
+      {modal === 'confirmDelete' && (
+        <div className="modal-overlay" onClick={() => setModal(pendingDeleteType === 'user' ? 'users' : 'none')}>
+          <div className="modal-content animate-in" style={{ maxWidth: 400, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, margin: '0 auto 20px' }}>⚠️</div>
+            <h3 style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: '0 0 12px' }}>Confirm Deletion</h3>
+            <p style={{ color: '#6b7280', fontSize: 15, lineHeight: 1.6, margin: '0 0 28px' }}>
+              Are you sure you want to permanently delete this {pendingDeleteType}? This action cannot be undone and will remove all associated records.
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setModal(pendingDeleteType === 'user' ? 'users' : 'none')} className="btn btn-outline" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={confirmDelete} disabled={saving} className="btn btn-danger" style={{ flex: 1 }}>
+                {saving ? 'Deleting...' : 'Yes, Delete'}
+              </button>
             </div>
           </div>
         </div>
