@@ -164,7 +164,7 @@ class ApiService {
   }) {
     const headers = await this.#getHeaders()
     const res = await fetch(`${this.#baseUrl}/api/flights`, {
-      method: 'GET',
+      method: 'POST',
       headers,
       body: JSON.stringify(params),
     })
@@ -181,12 +181,7 @@ class ApiService {
     return res.json()
   }
 
-  async getSeatsByModel(modelId: string) {
-    const headers = await this.#getHeaders()
-    const res = await fetch(`${this.#baseUrl}/api/user/seats/model/${modelId}`, { method: 'GET', headers })
-    if (!res.ok) throw new Error(`Failed to fetch seats: ${res.status}`)
-    return res.json()
-  }
+
 
   // ── Checkout ────────────────────────────────────────
 
