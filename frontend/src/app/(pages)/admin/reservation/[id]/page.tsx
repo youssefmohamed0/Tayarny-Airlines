@@ -19,8 +19,11 @@ async function loadReservation() {
     const data = await apiService.getReservation(id as string)
 
 
-const ticketsResponse = await apiService.getAllTickets(0, 1000)
-const tickets = ticketsResponse.content || []
+const ticketsResponse = await apiService.getReservationTicketsAdmin(id as string)
+console.log("TICKETS RESPONSE:", ticketsResponse)
+const tickets = Array.isArray(ticketsResponse)
+  ? ticketsResponse
+  : []
 
 
     setReservation({

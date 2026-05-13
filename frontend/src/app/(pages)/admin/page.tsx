@@ -2,9 +2,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiService } from '@/services/api'
-const [reservations, setReservations] = useState<any[]>([])
-const [page, setPage] = useState(0)
-const [hasMore, setHasMore] = useState(true)
 
 type FareOption = {
   fareName: string
