@@ -1,6 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { apiService } from '@/services/api'
+const [reservations, setReservations] = useState<any[]>([])
+const [page, setPage] = useState(0)
+const [hasMore, setHasMore] = useState(true)
 
 type FareOption = {
   fareName: string
@@ -29,6 +33,7 @@ const emptyFlight: Flight = {
 }
 
 export default function AdminPage() {
+  const router = useRouter()
   const [modal, setModal] = useState<Modal>('none')
   const [flights, setFlights] = useState<Flight[]>([])
   const [loadingFlights, setLoadingFlights] = useState(true)
@@ -48,15 +53,12 @@ export default function AdminPage() {
     setLoadingFlights(true)
     try {
       const data = await apiService.getSingleFlight(flightNumber)
-      
-      // Stable sorting by Flight Number to prevent list "jumping"
-      const sortedData = [...data].sort((a, b) => 
-        a.flightNumber.localeCompare(b.flightNumber)
-      )
-      
-      setFlights(sortedData)
+      const arr = Array.isArray(data) ? data : [data]
+      const sorted = [...arr].sort((a, b) => a.flightNumber.localeCompare(b.flightNumber))
+      setFlights(sorted)
     } catch (e) {
-      console.error("Failed to load flights", e)
+      console.error('Failed to load flights', e)
+      setFlights([])
     } finally {
       setLoadingFlights(false)
     }
@@ -78,26 +80,20 @@ export default function AdminPage() {
     setSaving(true)
     setError('')
     try {
-      // Create copy and format dates for backend
       const payload = {
         ...form,
         departure: { ...form.departure, time: new Date(form.departure.time).toISOString() },
         arrival: { ...form.arrival, time: new Date(form.arrival.time).toISOString() },
       }
-
       if (modal === 'add') {
-        // Remove flightId entirely for new flight POST requests
-        delete payload.flightId 
+        delete payload.flightId
         await apiService.addFlight(payload)
       } else if (modal === 'edit' && selectedFlight?.flightId) {
         await apiService.modifyFlight(selectedFlight.flightId, payload)
       }
-      
       setModal('none')
-      // Refresh list using the current search term to stay on the same view
       await loadFlights(searchFlightNumber || undefined)
     } catch (e: any) {
-      console.error('Failed to save flight', e)
       setError(e.message || 'Failed to save flight.')
     } finally {
       setSaving(false)
@@ -128,6 +124,18 @@ export default function AdminPage() {
     if (!confirm('Are you sure you want to delete this user?')) return
     const ok = await apiService.deleteUser(userId)
     if (ok) setUsers(prev => prev.filter(u => u.id !== userId))
+  }
+
+  function handleBookingSearch() {
+    if (searchBookingId.trim()) {
+      router.push(`/admin/reservation/${searchBookingId.trim()}`)
+    }
+  }
+
+  function handleUserSearch() {
+    if (searchUser.trim()) {
+      router.push(`/admin/reservations?username=${searchUser.trim()}`)
+    }
   }
 
   const inputStyle = {
@@ -163,8 +171,7 @@ export default function AdminPage() {
               style={{ ...inputStyle, maxWidth: 260 }} />
             <button onClick={() => loadFlights(searchFlightNumber || undefined)} style={{
               padding: '10px 16px', background: '#378ADD', color: 'white',
-              border: 'none', borderRadius: 8, cursor: 'pointer',
-              fontSize: 14, fontFamily: 'inherit',
+              border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontFamily: 'inherit',
             }}>Search</button>
             {searchFlightNumber && (
               <button onClick={() => { setSearchFlightNumber(''); loadFlights() }} style={{
@@ -176,20 +183,17 @@ export default function AdminPage() {
 
           <button onClick={() => setModal('bookingId')} style={{
             padding: '12px 20px', background: '#378ADD', color: 'white',
-            border: 'none', borderRadius: 10, cursor: 'pointer',
-            fontSize: 14, fontWeight: 'bold', fontFamily: 'inherit',
+            border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 'bold', fontFamily: 'inherit',
           }}>🔍 Search by Booking ID</button>
 
           <button onClick={() => setModal('bookingUser')} style={{
             padding: '12px 20px', background: '#378ADD', color: 'white',
-            border: 'none', borderRadius: 10, cursor: 'pointer',
-            fontSize: 14, fontWeight: 'bold', fontFamily: 'inherit',
+            border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 'bold', fontFamily: 'inherit',
           }}>👤 Search by User</button>
 
           <button onClick={openUsers} style={{
             padding: '12px 20px', background: '#e74c3c', color: 'white',
-            border: 'none', borderRadius: 10, cursor: 'pointer',
-            fontSize: 14, fontWeight: 'bold', fontFamily: 'inherit',
+            border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 'bold', fontFamily: 'inherit',
           }}>👥 View All Users</button>
         </div>
 
@@ -234,12 +238,11 @@ export default function AdminPage() {
                   <button onClick={() => openEdit(flight)} style={{
                     padding: '8px 14px', background: '#378ADD', color: 'white',
                     border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13,
-                    fontFamily: 'inherit', boxShadow: '0 2px 6px rgba(55,138,221,0.4)',
+                    fontFamily: 'inherit',
                   }}>✏️ Edit</button>
                   <button onClick={() => flight.flightId && handleDeleteFlight(flight.flightId)} style={{
                     padding: '8px 14px', background: '#e74c3c', color: 'white',
-                    border: 'none', borderRadius: 8, cursor: 'pointer',
-                    fontSize: 13, fontFamily: 'inherit', boxShadow: '0 2px 6px rgba(231,76,60,0.4)',
+                    border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit',
                   }}>🗑️</button>
                 </div>
               </div>
@@ -255,6 +258,7 @@ export default function AdminPage() {
             <h3 style={{ margin: '0 0 20px', fontSize: 22, color: '#000' }}>
               {modal === 'add' ? '➕ Add New Flight' : '✏️ Edit Flight'}
             </h3>
+            {error && <div style={{ background: '#fff0f0', border: '1px solid #e74c3c', borderRadius: 8, padding: '10px 14px', marginBottom: 16, color: '#e74c3c', fontSize: 13 }}>⚠️ {error}</div>}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
               {[
@@ -268,7 +272,7 @@ export default function AdminPage() {
               ].map((field, idx) => (
                 <div key={idx}>
                   <label style={{ fontSize: 13, color: '#000', fontWeight: 'bold', display: 'block', marginBottom: 4 }}>{field.label}</label>
-                  <input type={(field as any).type || 'text'} value={field.val} maxLength={10}
+                  <input type={(field as any).type || 'text'} value={field.val}
                     onChange={e => field.onChange(e.target.value)} style={inputStyle} />
                 </div>
               ))}
@@ -278,38 +282,17 @@ export default function AdminPage() {
             {form.fareOptions.map((fare, i) => (
               <div key={i} style={{ border: '1.5px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 10, background: '#fafafa' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div>
-                    <label style={{ fontSize: 12, color: '#000', fontWeight: 'bold' }}>Fare Name</label>
-                    <input value={fare.fareName} onChange={e => {
-                      const updated = [...form.fareOptions]
-                      updated[i] = { ...updated[i], fareName: e.target.value }
-                      setForm({ ...form, fareOptions: updated })
-                    }} style={inputStyle} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, color: '#000', fontWeight: 'bold' }}>Price</label>
-                    <input type="number" value={fare.pricePerSeat} onChange={e => {
-                      const updated = [...form.fareOptions]
-                      updated[i] = { ...updated[i], pricePerSeat: Number(e.target.value) }
-                      setForm({ ...form, fareOptions: updated })
-                    }} style={inputStyle} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, color: '#000', fontWeight: 'bold' }}>Seats</label>
-                    <input type="number" value={fare.availableSeats} onChange={e => {
-                      const updated = [...form.fareOptions]
-                      updated[i] = { ...updated[i], availableSeats: Number(e.target.value) }
-                      setForm({ ...form, fareOptions: updated })
-                    }} style={inputStyle} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 12, color: '#000', fontWeight: 'bold' }}>Benefits (split by ,)</label>
-                    <input value={fare.benefits.join(', ')} onChange={e => {
-                      const updated = [...form.fareOptions]
-                      updated[i] = { ...updated[i], benefits: e.target.value.split(',').map(b => b.trim()) }
-                      setForm({ ...form, fareOptions: updated })
-                    }} style={inputStyle} />
-                  </div>
+                  {[
+                    { label: 'Fare Name', val: fare.fareName, onChange: (v: string) => { const u = [...form.fareOptions]; u[i] = { ...u[i], fareName: v }; setForm({ ...form, fareOptions: u }) } },
+                    { label: 'Price', val: String(fare.pricePerSeat), type: 'number', onChange: (v: string) => { const u = [...form.fareOptions]; u[i] = { ...u[i], pricePerSeat: Number(v) }; setForm({ ...form, fareOptions: u }) } },
+                    { label: 'Seats', val: String(fare.availableSeats), type: 'number', onChange: (v: string) => { const u = [...form.fareOptions]; u[i] = { ...u[i], availableSeats: Number(v) }; setForm({ ...form, fareOptions: u }) } },
+                    { label: 'Benefits (split by ,)', val: fare.benefits.join(', '), onChange: (v: string) => { const u = [...form.fareOptions]; u[i] = { ...u[i], benefits: v.split(',').map(b => b.trim()) }; setForm({ ...form, fareOptions: u }) } },
+                  ].map((f, j) => (
+                    <div key={j}>
+                      <label style={{ fontSize: 12, color: '#000', fontWeight: 'bold', display: 'block', marginBottom: 3 }}>{f.label}</label>
+                      <input type={(f as any).type || 'text'} value={f.val} onChange={e => f.onChange(e.target.value)} style={inputStyle} />
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
@@ -320,11 +303,94 @@ export default function AdminPage() {
             </button>
 
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setModal('none')} style={{ flex: 1, padding: '12px', borderRadius: 10, border: '1.5px solid #ccc', background: 'white', fontWeight: 'bold' }}>Cancel</button>
-              <button onClick={handleSaveFlight} disabled={saving} style={{ flex: 1, padding: '12px', borderRadius: 10, border: 'none', background: saving ? '#999' : '#1a1a2e', color: 'white', fontWeight: 700 }}>
+              <button onClick={() => { setModal('none'); setError('') }} style={{ flex: 1, padding: '12px', borderRadius: 10, border: '1.5px solid #ccc', background: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+              <button onClick={handleSaveFlight} disabled={saving} style={{ flex: 1, padding: '12px', borderRadius: 10, border: 'none', background: saving ? '#999' : '#1a1a2e', color: 'white', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                 {saving ? 'Saving...' : modal === 'add' ? 'Add Flight' : 'Save Changes'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search by Booking ID */}
+      {modal === 'bookingId' && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setModal('none')}>
+          <div style={{ background: 'white', borderRadius: 16, padding: '2rem', width: 420, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 16px', color: '#000' }}>🔍 Search by Booking ID</h3>
+            <p style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>Enter a reservation ID to view its full details and tickets.</p>
+            <input placeholder="e.g. 219f4c34-d92f-4dca-b822..." value={searchBookingId}
+              onChange={e => setSearchBookingId(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleBookingSearch()}
+              style={{ ...inputStyle, marginBottom: 12 }} />
+            <button onClick={handleBookingSearch} style={{
+              width: '100%', padding: '12px', background: '#378ADD', color: 'white',
+              border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
+            }}>Go to Reservation →</button>
+          </div>
+        </div>
+      )}
+
+      {/* Search by User */}
+      {modal === 'bookingUser' && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setModal('none')}>
+          <div style={{ background: 'white', borderRadius: 16, padding: '2rem', width: 420, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 16px', color: '#000' }}>👤 Search by User</h3>
+            <p style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>Enter a username to view all their reservations.</p>
+            <input placeholder="e.g. john_doe" value={searchUser}
+              onChange={e => setSearchUser(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleUserSearch()}
+              style={{ ...inputStyle, marginBottom: 12 }} />
+            <button onClick={handleUserSearch} style={{
+              width: '100%', padding: '12px', background: '#378ADD', color: 'white',
+              border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
+            }}>View Reservations →</button>
+          </div>
+        </div>
+      )}
+
+      {/* View All Users */}
+      {modal === 'users' && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setModal('none')}>
+          <div style={{ background: 'white', borderRadius: 16, padding: '2rem', width: 620, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 20px', color: '#000' }}>👥 All Users</h3>
+            {loadingUsers ? (
+              <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>Loading users...</p>
+            ) : users.length === 0 ? (
+              <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>No users found.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {users.map(user => (
+                  <div key={user.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 16px', border: '1.5px solid #e0e0e0', borderRadius: 10,
+                    background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                  }}>
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{user.fullName}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: '#666' }}>
+                        @{user.username} · {user.email} · ✈️ {user.totalFlights} flights
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button onClick={() => { setModal('none'); router.push(`/admin/reservations?username=${user.username}`) }} style={{
+                        padding: '6px 12px', background: '#1a1a2e', color: 'white',
+                        border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
+                      }}>📋 Reservations</button>
+                      <span style={{
+                        fontSize: 11, padding: '4px 10px', borderRadius: 20, fontWeight: 700,
+                        background: user.role === 'ADMIN' ? '#1a1a2e' : '#378ADD', color: 'white',
+                      }}>{user.role}</span>
+                      {user.role === 'CUSTOMER' && (
+                        <button onClick={() => handleDeleteUser(user.id, user.role)} style={{
+                          padding: '6px 12px', background: '#e74c3c', color: 'white',
+                          border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
+                        }}>🗑️ Delete</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

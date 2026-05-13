@@ -91,13 +91,6 @@ class ApiService {
     return res.ok
   }
 
-  async cancelTicket(ticketId: string) {
-    const headers = await this.#getHeaders()
-    const res = await fetch(`${this.#baseUrl}/api/admin/tickets/${ticketId}/cancel`, { method: 'PUT', headers })
-    if (!res.ok) throw new Error(`Failed to cancel ticket: ${res.status}`)
-    return res.json()
-  }
-
   async addFlight(flight: any) {
     const headers = await this.#getHeaders()
     const res = await fetch(this.#baseUrl + '/api/admin/flight', {
@@ -214,22 +207,25 @@ class ApiService {
 
   // ── Reservations ────────────────────────────────────
 
-  async getReservations(page = 0, size = 10) {
-    const headers = await this.#getHeaders()
-    const res = await fetch(
-      `${this.#baseUrl}/api/user/reservations?page=${page}&size=${size}`,
-      { method: 'GET', headers }
-    )
-    if (!res.ok) throw new Error(`Failed to fetch reservations: ${res.status}`)
-    return res.json()
+async getReservations(page = 0, size = 10, username?: string) {
+  const headers = await this.#getHeaders()
+  let url = `${this.#baseUrl}/api/admin/reservations?page=${page}&size=${size}`
+  
+  if (username) {
+    url += `&username=${encodeURIComponent(username)}`
   }
 
-  async getReservation(id: string) {
-    const headers = await this.#getHeaders()
-    const res = await fetch(`${this.#baseUrl}/api/user/reservations/${id}`, { method: 'GET', headers })
-    if (!res.ok) throw new Error(`Failed to fetch reservation: ${res.status}`)
-    return res.json()
-  }
+  const res = await fetch(url, { method: 'GET', headers })
+  if (!res.ok) throw new Error(`Failed to fetch reservations: ${res.status}`)
+  return res.json()
+}
+
+async getReservation(id: string) {
+  const headers = await this.#getHeaders()
+  const res = await fetch(`${this.#baseUrl}/api/admin/reservations/${id}`, { method: 'GET', headers })
+  if (!res.ok) throw new Error(`Failed to fetch reservation: ${res.status}`)
+  return res.json()
+}
 
   async getReservationTickets(id: string) {
     const headers = await this.#getHeaders()
@@ -244,6 +240,69 @@ class ApiService {
     if (!res.ok) throw new Error(`Failed to cancel reservation: ${res.status}`)
     return res.json()
   }
+
+  async getTicket(ticketId: string) {
+  const headers = await this.#getHeaders()
+  const res = await fetch(`${this.#baseUrl}/api/admin/tickets/${ticketId}`, { method: 'GET', headers })
+  if (!res.ok) throw new Error(`Failed to fetch ticket: ${res.status}`)
+  return res.json()
 }
+
+async cancelTicket(ticketId: string) {
+  const headers = await this.#getHeaders()
+
+  const res = await fetch(
+    `${this.#baseUrl}/api/admin/tickets/${ticketId}/cancel`,
+    {
+      method: 'PUT',
+      headers,
+    }
+  )
+
+  if (!res.ok) {
+    const error = await res.text()
+    throw new Error(error || `Failed to cancel ticket: ${res.status}`)
+  }
+
+  return res.json()
+}
+
+async getAllTickets(page = 0, size = 50) {
+  const headers = await this.#getHeaders()
+
+  const res = await fetch(
+    `${this.#baseUrl}/api/admin/tickets?page=${page}&size=${size}`,
+    {
+      method: 'GET',
+      headers,
+    }
+  )
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch tickets: ${res.status}`)
+  }
+
+  return res.json()
+}
+async cancelReservationAdmin(reservationId: string) {
+  const headers = await this.#getHeaders()
+
+  const res = await fetch(
+    `${this.#baseUrl}/api/admin/reservations/${reservationId}/cancel`,
+    {
+      method: 'PUT',
+      headers,
+    }
+  )
+
+  if (!res.ok) {
+    const error = await res.text()
+    throw new Error(error || `Failed to cancel reservation: ${res.status}`)
+  }
+
+  return await res.json()
+}
+}
+
 
 export const apiService = new ApiService()
